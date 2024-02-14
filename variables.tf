@@ -3,11 +3,8 @@ variable "name" {
   description = "The name of the this resource."
 
   validation {
-    condition     = can(regex("TODO determine REGEX", var.name))
-    error_message = "The name must be TODO."
-    # TODO remove the example below once complete:
-    #condition     = can(regex("^[a-z0-9]{5,50}$", var.name))
-    #error_message = "The name must be between 5 and 50 characters long and can only contain lowercase letters and numbers."
+    condition     = can(regex("^[a-z0-9-]{1,60}$", var.name))
+    error_message = "The name must be between 1 and 60 characters long and can only contain letters, numbers, hyphens and Unicode characters."
   }
 }
 
@@ -199,4 +196,54 @@ variable "tags" {
   type        = map(any)
   default     = {}
   description = "The map of tags to be applied to the resource"
+}
+
+variable "os_type" {
+  type = string
+  default = ""
+  description = "The operating system type of the service plan. Possible values are `Windows`, `Linux` or `WindowsContainer`."
+  validation {
+    condition     = can(regex("Windows|Linux|WindowsContainer", var.os_type))
+    error_message = "The operating system type must be one of: 'Windows', 'Linux', or 'WindowsContainer'."
+  }
+}
+
+variable "sku_name" {
+  type = string
+  default = ""
+  description = "The SKU name of the service plan."
+  validation {
+    condition     = can(regex("B1|B2|B3|D1|F1|I1|I2|I3|I1v2|I2v2|I3v2|I4v2|I5v2|I6v2|P1v2|P2v2|P3v2|P0v3|P1v3|P2v3|P3v3|P1mv3|P2mv3|P3mv3|P4mv3|P5mv3|S1|S2|S3|SHARED|EP1|EP2|EP3|WS1|WS2|WS3|Y1", var.sku_name))
+    error_message = "The SKU name must be B1, B2, B3, D1, F1, I1, I2, I3, I1v2, I2v2, I3v2, I4v2, I5v2, I6v2, P1v2, P2v2, P3v2, P0v3, P1v3, P2v3, P3v3, P1mv3, P2mv3, P3mv3, P4mv3, P5mv3, S1, S2, S3, SHARED, EP1, EP2, EP3, WS1, WS2, WS3, and Y1."
+  }
+}
+
+variable "app_service_environment_id" {
+  type = string
+  default = null
+  description = "Optional: The ID of the App Service Environment."
+}
+
+variable "maximum_elastic_worker_count" {
+  type = number
+  default = 1
+  description = "The minimum number of workers to allocate for this App Service Plan."
+}
+
+variable "worker_count" {
+  type = number
+  default = null
+  description = "The number of workers to allocate for this App Service Plan."
+}
+
+variable "per_site_scaling_enabled" {
+  type = bool
+  default = false
+  description = "Should per site scaling be enabled for this App Service Plan."
+}
+
+variable "zone_balancing_enabled" {
+  type = bool
+  default = false
+  description = "Should zone balancing be enabled for this App Service Plan."
 }
