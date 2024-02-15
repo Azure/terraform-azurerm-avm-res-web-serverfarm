@@ -54,4 +54,6 @@ module "test" {
   enable_telemetry    = var.enable_telemetry # see variables.tf
   name                = "web-serverfarm"
   resource_group_name = azurerm_resource_group.this.name
+  sku_name = "S1"
+  os_type = "Linux"
 }

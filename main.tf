@@ -11,7 +11,7 @@ resource "azurerm_service_plan" "this" {
   os_type = var.os_type
   sku_name = var.sku_name
   app_service_environment_id = var.app_service_environment_id
-  maximum_elastic_worker_count = locals.maximum_elastic_worker_count
+  maximum_elastic_worker_count = local.maximum_elastic_worker_count
   worker_count = var.worker_count
   per_site_scaling_enabled = var.per_site_scaling_enabled
   zone_balancing_enabled = var.zone_balancing_enabled
