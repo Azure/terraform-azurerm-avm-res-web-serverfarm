@@ -1,7 +1,22 @@
 <!-- BEGIN_TF_DOCS -->
-# terraform-azurerm-avm-res-web-serverfarm
+# terraform-azurerm-avm-template
 
-This is the Terraform Azure Verified Module for an Azure App Service Plan.
+This is a template repo for Terraform Azure Verified Modules.
+
+Things to do:
+
+1. Set up a GitHub repo environment called `test`.
+1. Configure environment protection rule to ensure that approval is required before deploying to this environment.
+1. Create a user-assigned managed identity in your test subscription.
+1. Create a role assignment for the managed identity on your test subscription, use the minimum required role.
+1. Configure federated identity credentials on the user assigned managed identity. Use the GitHub environment.
+1. Create the following environment secrets on the `test` environment:
+   1. AZURE\_CLIENT\_ID
+   1. AZURE\_TENANT\_ID
+   1. AZURE\_SUBSCRIPTION\_ID
+1. Search and update TODOs within the code and remove the TODO comments once complete.
+
+Major version Zero (0.y.z) is for initial development. Anything MAY change at any time. A module SHOULD NOT be considered stable till at least it is major version one (1.0.0) or greater. Changes will always be via new versions being published and no changes will be made to existing published versions. For more details please go to <https://semver.org/>
 
 <!-- markdownlint-disable MD033 -->
 ## Requirements
@@ -26,10 +41,10 @@ The following providers are used by this module:
 
 The following resources are used by this module:
 
-- [azurerm_service_plan.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/service_plan) (resource)
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_resource_group_template_deployment.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group_template_deployment) (resource)
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
+- [azurerm_service_plan.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/service_plan) (resource)
 - [random_id.telem](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) (resource)
 - [azurerm_resource_group.parent](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group) (data source)
 
@@ -38,25 +53,27 @@ The following resources are used by this module:
 
 The following input variables are required:
 
-### <a name="input_os_type"></a> [os\_type](#input\_os\_type)
+### <a name="input_name"></a> [name](#input\_name)
 
-Description: The O/S type for the App Services to be hosted in this plan. Options are Windows, Linux, or WindowsContainer. 
+Description: The name of the this resource.
 
 Type: `string`
 
-### <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name)
+### <a name="input_os_type"></a> [os\_type](#input\_os\_type)
 
-Description: The SKU for the plan. Possible values include B1, B2, B3, D1, F1, I1, I2, I3, I1v2, I2v2, I3v2, I4v2, I5v2, I6v2, P1v2, P2v2, P3v2, P0v3, P1v3, P2v3, P3v3, P1mv3, P2mv3, P3mv3, P4mv3, P5mv3, S1, S2, S3, SHARED, EP1, EP2, EP3, WS1, WS2, WS3, and Y1. 
-
-Isolated SKUs (I1, I2, I3, I1v2, I2v2, and I3v2) can only be used with App Service Environments.
-
-Elastic and Consumption SKUs (Y1, EP1, EP2, and EP3) are for use with Function Apps.
+Description: The operating system type of the service plan. Possible values are `Windows`, `Linux` or `WindowsContainer`.
 
 Type: `string`
 
 ### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
 
-Description: The name of the existing resource group where the resources will be deployed.
+Description: The resource group where the resources will be deployed.
+
+Type: `string`
+
+### <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name)
+
+Description: The SKU name of the service plan.
 
 Type: `string`
 
@@ -64,46 +81,13 @@ Type: `string`
 
 The following input variables are optional (have default values):
 
-### <a name="input_app_service_environment_id"></a> [app\_service\_environment](#input\_app\_service\_environment)
+### <a name="input_app_service_environment_id"></a> [app\_service\_environment\_id](#input\_app\_service\_environment\_id)
 
-Description: The ID of the App Service Environment to create this Service Plan in.
+Description: Optional: The ID of the App Service Environment.
 
-Type: `boolean`
-
-### <a name="input_maximum_elastic_worker_count"></a> [maximum\_elastic\_worker\_count](#input\_maximum\elastic\_worker\_count)
-
-Description: The maximum number of workers to use in an Elastic SKU Plan. Cannot be set unless using an Elastic SKU.
-
-Type: `number`
+Type: `string`
 
 Default: `null`
-
-### <a name="input_worker_count"></a> [worker\_count](#input\_worker\_count)
-
-Description: The number of Workers (instances) to be allocated.
-
-Type: `number`
-
-Default: `null`
-
-### <a name="input_per_site_scaling_enabled"></a> [per\_site\_scaling\_enabled](#input\_per\_site\_scaling\_enabled)
-
-Description: Should Per Site Scaling be enabled.
-
-Type: `boolean`
-
-Default: `false`
-
-### <a name="input_zone_balancing_enabled"></a> [zone\_balancing\_enabled](#input\_zone\_balancing\_enabled)
-
-Description: Should the Service Plan balance across Availability Zones in the region. Changing this forces a new resource to be created.
-
-If this setting is set to true and the worker_count value is specified, the worker_count should be set to a multiple of the number of availability zones in the region. 
-
-Type: `boolean`
-
-Default: `false`
-
 
 ### <a name="input_customer_managed_key"></a> [customer\_managed\_key](#input\_customer\_managed\_key)
 
@@ -204,6 +188,22 @@ object({
 
 Default: `{}`
 
+### <a name="input_maximum_elastic_worker_count"></a> [maximum\_elastic\_worker\_count](#input\_maximum\_elastic\_worker\_count)
+
+Description: The minimum number of workers to allocate for this App Service Plan.
+
+Type: `number`
+
+Default: `null`
+
+### <a name="input_per_site_scaling_enabled"></a> [per\_site\_scaling\_enabled](#input\_per\_site\_scaling\_enabled)
+
+Description: Should per site scaling be enabled for this App Service Plan.
+
+Type: `bool`
+
+Default: `false`
+
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
 Description: A map of role assignments to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
@@ -240,6 +240,22 @@ Description: The map of tags to be applied to the resource
 Type: `map(any)`
 
 Default: `{}`
+
+### <a name="input_worker_count"></a> [worker\_count](#input\_worker\_count)
+
+Description: The number of workers to allocate for this App Service Plan.
+
+Type: `number`
+
+Default: `null`
+
+### <a name="input_zone_balancing_enabled"></a> [zone\_balancing\_enabled](#input\_zone\_balancing\_enabled)
+
+Description: Should zone balancing be enabled for this App Service Plan.
+
+Type: `bool`
+
+Default: `false`
 
 ## Outputs
 

@@ -8,10 +8,36 @@ variable "name" {
   }
 }
 
+variable "os_type" {
+  type        = string
+  description = "The operating system type of the service plan. Possible values are `Windows`, `Linux` or `WindowsContainer`."
+
+  validation {
+    condition     = can(regex("Windows|Linux|WindowsContainer", var.os_type))
+    error_message = "The operating system type must be one of: 'Windows', 'Linux', or 'WindowsContainer'."
+  }
+}
+
 # This is required for most resource modules
 variable "resource_group_name" {
   type        = string
   description = "The resource group where the resources will be deployed."
+}
+
+variable "sku_name" {
+  type        = string
+  description = "The SKU name of the service plan."
+
+  validation {
+    condition     = can(regex("B1|B2|B3|D1|F1|I1|I2|I3|I1v2|I2v2|I3v2|I4v2|I5v2|I6v2|P1v2|P2v2|P3v2|P0v3|P1v3|P2v3|P3v3|P1mv3|P2mv3|P3mv3|P4mv3|P5mv3|S1|S2|S3|SHARED|EP1|EP2|EP3|WS1|WS2|WS3|Y1", var.sku_name))
+    error_message = "The SKU name must be B1, B2, B3, D1, F1, I1, I2, I3, I1v2, I2v2, I3v2, I4v2, I5v2, I6v2, P1v2, P2v2, P3v2, P0v3, P1v3, P2v3, P3v3, P1mv3, P2mv3, P3mv3, P4mv3, P5mv3, S1, S2, S3, SHARED, EP1, EP2, EP3, WS1, WS2, WS3, and Y1."
+  }
+}
+
+variable "app_service_environment_id" {
+  type        = string
+  default     = null
+  description = "Optional: The ID of the App Service Environment."
 }
 
 # required AVM interfaces
@@ -114,56 +140,16 @@ variable "managed_identities" {
   description = "Managed identities to be created for the resource."
 }
 
-variable "private_endpoints" {
-  type = map(object({
-    name = optional(string, null)
-    role_assignments = optional(map(object({
-      role_definition_id_or_name             = string
-      principal_id                           = string
-      description                            = optional(string, null)
-      skip_service_principal_aad_check       = optional(bool, false)
-      condition                              = optional(string, null)
-      condition_version                      = optional(string, null)
-      delegated_managed_identity_resource_id = optional(string, null)
-    })), {})
-    lock = optional(object({
-      name = optional(string, null)
-      kind = optional(string, "None")
-    }), {})
-    tags                                    = optional(map(any), null)
-    subnet_resource_id                      = string
-    private_dns_zone_group_name             = optional(string, "default")
-    private_dns_zone_resource_ids           = optional(set(string), [])
-    application_security_group_associations = optional(map(string), {})
-    private_service_connection_name         = optional(string, null)
-    network_interface_name                  = optional(string, null)
-    location                                = optional(string, null)
-    resource_group_name                     = optional(string, null)
-    ip_configurations = optional(map(object({
-      name               = string
-      private_ip_address = string
-    })), {})
-  }))
-  default     = {}
-  description = <<DESCRIPTION
-A map of private endpoints to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
+variable "maximum_elastic_worker_count" {
+  type        = number
+  default     = null
+  description = "The minimum number of workers to allocate for this App Service Plan."
+}
 
-- `name` - (Optional) The name of the private endpoint. One will be generated if not set.
-- `role_assignments` - (Optional) A map of role assignments to create on the private endpoint. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time. See `var.role_assignments` for more information.
-- `lock` - (Optional) The lock level to apply to the private endpoint. Default is `None`. Possible values are `None`, `CanNotDelete`, and `ReadOnly`.
-- `tags` - (Optional) A mapping of tags to assign to the private endpoint.
-- `subnet_resource_id` - The resource ID of the subnet to deploy the private endpoint in.
-- `private_dns_zone_group_name` - (Optional) The name of the private DNS zone group. One will be generated if not set.
-- `private_dns_zone_resource_ids` - (Optional) A set of resource IDs of private DNS zones to associate with the private endpoint. If not set, no zone groups will be created and the private endpoint will not be associated with any private DNS zones. DNS records must be managed external to this module.
-- `application_security_group_resource_ids` - (Optional) A map of resource IDs of application security groups to associate with the private endpoint. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
-- `private_service_connection_name` - (Optional) The name of the private service connection. One will be generated if not set.
-- `network_interface_name` - (Optional) The name of the network interface. One will be generated if not set.
-- `location` - (Optional) The Azure location where the resources will be deployed. Defaults to the location of the resource group.
-- `resource_group_name` - (Optional) The resource group where the resources will be deployed. Defaults to the resource group of this resource.
-- `ip_configurations` - (Optional) A map of IP configurations to create on the private endpoint. If not specified the platform will create one. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
-  - `name` - The name of the IP configuration.
-  - `private_ip_address` - The private IP address of the IP configuration.
-DESCRIPTION
+variable "per_site_scaling_enabled" {
+  type        = bool
+  default     = false
+  description = "Should per site scaling be enabled for this App Service Plan."
 }
 
 variable "role_assignments" {
@@ -198,48 +184,10 @@ variable "tags" {
   description = "The map of tags to be applied to the resource"
 }
 
-variable "os_type" {
-  type        = string
-  default     = ""
-  description = "The operating system type of the service plan. Possible values are `Windows`, `Linux` or `WindowsContainer`."
-  validation {
-    condition     = can(regex("Windows|Linux|WindowsContainer", var.os_type))
-    error_message = "The operating system type must be one of: 'Windows', 'Linux', or 'WindowsContainer'."
-  }
-}
-
-variable "sku_name" {
-  type        = string
-  default     = ""
-  description = "The SKU name of the service plan."
-  validation {
-    condition     = can(regex("B1|B2|B3|D1|F1|I1|I2|I3|I1v2|I2v2|I3v2|I4v2|I5v2|I6v2|P1v2|P2v2|P3v2|P0v3|P1v3|P2v3|P3v3|P1mv3|P2mv3|P3mv3|P4mv3|P5mv3|S1|S2|S3|SHARED|EP1|EP2|EP3|WS1|WS2|WS3|Y1", var.sku_name))
-    error_message = "The SKU name must be B1, B2, B3, D1, F1, I1, I2, I3, I1v2, I2v2, I3v2, I4v2, I5v2, I6v2, P1v2, P2v2, P3v2, P0v3, P1v3, P2v3, P3v3, P1mv3, P2mv3, P3mv3, P4mv3, P5mv3, S1, S2, S3, SHARED, EP1, EP2, EP3, WS1, WS2, WS3, and Y1."
-  }
-}
-
-variable "app_service_environment_id" {
-  type        = string
-  default     = null
-  description = "Optional: The ID of the App Service Environment."
-}
-
-variable "maximum_elastic_worker_count" {
-  type        = number
-  default     = null
-  description = "The minimum number of workers to allocate for this App Service Plan."
-}
-
 variable "worker_count" {
   type        = number
   default     = null
   description = "The number of workers to allocate for this App Service Plan."
-}
-
-variable "per_site_scaling_enabled" {
-  type        = bool
-  default     = false
-  description = "Should per site scaling be enabled for this App Service Plan."
 }
 
 variable "zone_balancing_enabled" {
