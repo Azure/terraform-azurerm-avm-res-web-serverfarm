@@ -226,7 +226,7 @@ variable "app_service_environment_id" {
 
 variable "maximum_elastic_worker_count" {
   type = number
-  default = 1
+  default = null
   description = "The minimum number of workers to allocate for this App Service Plan."
 }
 
