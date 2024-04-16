@@ -23,13 +23,15 @@ resource "azurerm_service_plan" "this" {
 }
 
 # required AVM resources interfaces
-resource "azurerm_management_lock" "this" {
-  count = var.lock.kind != "None" ? 1 : 0
-
-  lock_level = var.lock.kind
-  name       = coalesce(var.lock.name, "lock-${var.name}")
-  scope      = azurerm_service_plan.this.id
-}
+  resource "azurerm_management_lock" "this" {
+    count = var.lock != null ? 1 : 0
+  
+    lock_level = var.lock.kind
+    name       = coalesce(var.lock.name, "lock-${var.lock.kind}")
+    scope      = azurerm_service_plan.this.id
+    notes      = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
+  }
+  
 
 resource "azurerm_role_assignment" "this" {
   for_each = var.role_assignments
