@@ -192,6 +192,6 @@ variable "worker_count" {
 
 variable "zone_balancing_enabled" {
   type        = bool
-  default     = false
+  default     = true
   description = "Should zone balancing be enabled for this App Service Plan."
 }
