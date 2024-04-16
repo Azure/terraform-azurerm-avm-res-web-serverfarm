@@ -143,7 +143,6 @@ variable "role_assignments" {
     delegated_managed_identity_resource_id = optional(string, null)
   }))
   default     = {}
-  nullable    = false
   description = <<DESCRIPTION
   A map of role assignments to create on the Key Vault. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
   
@@ -156,10 +155,7 @@ variable "role_assignments" {
   
   > Note: only set `skip_service_principal_aad_check` to true if you are assigning a role to a service principal.
   DESCRIPTION
-}
-
-locals {
-  role_definition_resource_substring = "providers/Microsoft.Authorization/roleDefinitions"
+  nullable    = false
 }
 
 # tflint-ignore: terraform_unused_declarations
