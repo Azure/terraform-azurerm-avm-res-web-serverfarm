@@ -46,6 +46,7 @@ The following resources are used by this module:
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [azurerm_service_plan.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/service_plan) (resource)
 - [random_id.telem](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) (resource)
+- [azurerm_location.region](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/location) (data source)
 - [azurerm_resource_group.parent](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group) (data source)
 
 <!-- markdownlint-disable MD013 -->
@@ -255,7 +256,7 @@ Description: Should zone balancing be enabled for this App Service Plan.
 
 Type: `bool`
 
-Default: `false`
+Default: `true`
 
 ## Outputs
 
