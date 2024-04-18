@@ -4,6 +4,10 @@ data "azurerm_resource_group" "parent" {
   name = var.resource_group_name
 }
 
+data "azurerm_location" "region" {
+  location = coalesce(var.location, local.resource_group_location)
+}
+
 resource "azurerm_service_plan" "this" {
   location                     = coalesce(var.location, local.resource_group_location)
   name                         = var.name # calling code must supply the name
@@ -14,18 +18,20 @@ resource "azurerm_service_plan" "this" {
   maximum_elastic_worker_count = local.maximum_elastic_worker_count
   per_site_scaling_enabled     = var.per_site_scaling_enabled
   tags                         = var.tags
-  worker_count                 = var.worker_count
+  worker_count                 = var.zone_balancing_enabled ? length(data.azurerm_location.region.zone_mappings) : var.worker_count
   zone_balancing_enabled       = var.zone_balancing_enabled
 }
 
 # required AVM resources interfaces
 resource "azurerm_management_lock" "this" {
-  count = var.lock.kind != "None" ? 1 : 0
+  count = var.lock != null ? 1 : 0
 
   lock_level = var.lock.kind
-  name       = coalesce(var.lock.name, "lock-${var.name}")
+  name       = coalesce(var.lock.name, "lock-${var.lock.kind}")
   scope      = azurerm_service_plan.this.id
+  notes      = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
 }
+
 
 resource "azurerm_role_assignment" "this" {
   for_each = var.role_assignments
