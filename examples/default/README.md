@@ -26,7 +26,7 @@ provider "azurerm" {
 ## Section to provide a random Azure region for the resource group
 # This allows us to randomize the region for the resource group.
 locals {
-  test_regions = ["northcentralus", "southcentralus", "westus", "eastus", "eastus2"]
+  test_regions = ["centralus", "southcentralus", "canadacentral", "eastus", "eastus2"]
 }
 resource "random_integer" "region_index" {
   max = length(local.test_regions) - 1
