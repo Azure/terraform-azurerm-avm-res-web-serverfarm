@@ -194,9 +194,17 @@ Default: `true`
 
 The following outputs are exported:
 
+### <a name="output_name"></a> [name](#output\_name)
+
+Description: Name of the app service plan
+
 ### <a name="output_resource"></a> [resource](#output\_resource)
 
 Description: This is the full output for the resource.
+
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
+
+Description: Resource id of the app service plan
 
 ## Modules
 
