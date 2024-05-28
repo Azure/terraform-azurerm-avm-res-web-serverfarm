@@ -3,7 +3,7 @@ data "azurerm_resource_group" "parent" {
 }
 
 data "azurerm_location" "region" {
-  location = coalesce(var.location, local.resource_group_location)
+  location = coalesce(var.location, data.azurerm_resource_group.parent.location)
 }
 
 resource "azurerm_service_plan" "this" {
