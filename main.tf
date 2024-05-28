@@ -1,6 +1,4 @@
 data "azurerm_resource_group" "parent" {
-  count = var.location == null ? 1 : 0
-
   name = var.resource_group_name
 }
 
@@ -9,7 +7,7 @@ data "azurerm_location" "region" {
 }
 
 resource "azurerm_service_plan" "this" {
-  location                     = coalesce(var.location, local.resource_group_location)
+  location                     = data.azurerm_location.region.location
   name                         = var.name # calling code must supply the name
   os_type                      = var.os_type
   resource_group_name          = var.resource_group_name
