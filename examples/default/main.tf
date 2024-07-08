@@ -46,7 +46,8 @@ resource "azurerm_resource_group" "this" {
 # Leaving location as `null` will cause the module to use the resource group location
 # with a data source.
 module "test" {
-  source              = "Azure/avm-res-web-serverfarm/azurerm"
+  #source              = "Azure/avm-res-web-serverfarm/azurerm"
+  source              = "../.."
   enable_telemetry    = var.enable_telemetry # see variables.tf
   name                = "web-serverfarm"
   resource_group_name = azurerm_resource_group.this.name
