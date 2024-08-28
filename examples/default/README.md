@@ -19,7 +19,11 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 
@@ -43,7 +47,7 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = local.test_regions[random_integer.region_index.result]
+  location = "canadacentral"
   name     = module.naming.resource_group.name_unique
 }
 
@@ -52,9 +56,8 @@ resource "azurerm_resource_group" "this" {
 # Leaving location as `null` will cause the module to use the resource group location
 # with a data source.
 module "test" {
-  source = "../../"
-  # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  # ...
+  #source              = "Azure/avm-res-web-serverfarm/azurerm"
+  source              = "../.."
   enable_telemetry    = var.enable_telemetry # see variables.tf
   name                = "web-serverfarm"
   resource_group_name = azurerm_resource_group.this.name
@@ -116,7 +119,7 @@ Version: >= 0.3.0
 
 ### <a name="module_test"></a> [test](#module\_test)
 
-Source: ../../
+Source: ../..
 
 Version:
 
