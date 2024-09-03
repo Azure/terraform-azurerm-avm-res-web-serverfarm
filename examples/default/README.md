@@ -125,10 +125,6 @@ Description: Name of the app service plan
 
 Description: Name of the app service plan
 
-### <a name="output_zone_mappings"></a> [zone\_mappings](#output\_zone\_mappings)
-
-Description: Name of the app service plan
-
 ### <a name="output_zone_redundant"></a> [zone\_redundant](#output\_zone\_redundant)
 
 Description: Name of the app service plan
