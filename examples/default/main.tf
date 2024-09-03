@@ -20,12 +20,6 @@ provider "azurerm" {
   }
 }
 
-
-## Section to provide a random Azure region for the resource group
-# This allows us to randomize the region for the resource group.
-locals {
-  test_regions = ["centralus", "southcentralus", "canadacentral", "eastus", "eastus2"]
-}
 resource "random_integer" "region_index" {
   max = length(local.test_regions) - 1
   min = 0
@@ -41,7 +35,7 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = "canadacentral"
+  location = local.test_regions[random_integer.region_index.result]
   name     = module.naming.resource_group.name_unique
 }
 
@@ -51,10 +45,13 @@ resource "azurerm_resource_group" "this" {
 # with a data source.
 module "test" {
   #source              = "Azure/avm-res-web-serverfarm/azurerm"
-  source              = "../.."
-  enable_telemetry    = var.enable_telemetry # see variables.tf
-  name                = "web-serverfarm"
+  # version = 0.1.0 # Update the version as needed
+
+  source = "../.."
+
+  enable_telemetry    = var.enable_telemetry
+  name                = module.naming.app_service_plan.name_unique
   resource_group_name = azurerm_resource_group.this.name
   sku_name            = "P1v3"
-  os_type             = "Linux"
+  os_type             = "Windows"
 }

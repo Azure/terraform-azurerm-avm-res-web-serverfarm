@@ -24,16 +24,6 @@ variable "resource_group_name" {
   description = "The resource group where the resources will be deployed."
 }
 
-variable "sku_name" {
-  type        = string
-  description = "The SKU name of the service plan."
-
-  validation {
-    condition     = can(regex("B1|B2|B3|D1|F1|I1|I2|I3|I1v2|I2v2|I3v2|I4v2|I5v2|I6v2|P1v2|P2v2|P3v2|P0v3|P1v3|P2v3|P3v3|P1mv3|P2mv3|P3mv3|P4mv3|P5mv3|S1|S2|S3|SHARED|EP1|EP2|EP3|WS1|WS2|WS3|Y1", var.sku_name))
-    error_message = "The SKU name must be B1, B2, B3, D1, F1, I1, I2, I3, I1v2, I2v2, I3v2, I4v2, I5v2, I6v2, P1v2, P2v2, P3v2, P0v3, P1v3, P2v3, P3v3, P1mv3, P2mv3, P3mv3, P4mv3, P5mv3, S1, S2, S3, SHARED, EP1, EP2, EP3, WS1, WS2, WS3, and Y1."
-  }
-}
-
 variable "app_service_environment_id" {
   type        = string
   default     = null
@@ -48,6 +38,12 @@ This variable controls whether or not telemetry is enabled for the module.
 For more information see <https://aka.ms/avm/telemetryinfo>.
 If it is set to false, then no telemetry will be collected.
 DESCRIPTION
+}
+
+variable "location" {
+  type        = string
+  default     = null
+  description = "The location where the resources will be deployed."
 }
 
 variable "lock" {
@@ -110,6 +106,17 @@ variable "role_assignments" {
   nullable    = false
 }
 
+variable "sku_name" {
+  type        = string
+  default     = "P1v3"
+  description = "The SKU name of the service plan."
+
+  validation {
+    condition     = can(regex("B1|B2|B3|D1|F1|I1|I2|I3|I1v2|I2v2|I3v2|I4v2|I5v2|I6v2|P1v2|P2v2|P3v2|P0v3|P1v3|P2v3|P3v3|P1mv3|P2mv3|P3mv3|P4mv3|P5mv3|S1|S2|S3|SHARED|EP1|EP2|EP3|WS1|WS2|WS3|Y1", var.sku_name))
+    error_message = "The SKU name must be B1, B2, B3, D1, F1, I1, I2, I3, I1v2, I2v2, I3v2, I4v2, I5v2, I6v2, P1v2, P2v2, P3v2, P0v3, P1v3, P2v3, P3v3, P1mv3, P2mv3, P3mv3, P4mv3, P5mv3, S1, S2, S3, SHARED, EP1, EP2, EP3, WS1, WS2, WS3, and Y1."
+  }
+}
+
 # tflint-ignore: terraform_unused_declarations
 variable "tags" {
   type        = map(string)
@@ -119,7 +126,7 @@ variable "tags" {
 
 variable "worker_count" {
   type        = number
-  default     = null
+  default     = 3
   description = "The number of workers to allocate for this App Service Plan."
 }
 

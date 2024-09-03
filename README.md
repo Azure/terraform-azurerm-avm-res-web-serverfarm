@@ -58,12 +58,6 @@ Description: The resource group where the resources will be deployed.
 
 Type: `string`
 
-### <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name)
-
-Description: The SKU name of the service plan.
-
-Type: `string`
-
 ## Optional Inputs
 
 The following input variables are optional (have default values):
@@ -85,6 +79,14 @@ If it is set to false, then no telemetry will be collected.
 Type: `bool`
 
 Default: `true`
+
+### <a name="input_location"></a> [location](#input\_location)
+
+Description: The location where the resources will be deployed.
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_lock"></a> [lock](#input\_lock)
 
@@ -152,6 +154,14 @@ map(object({
 
 Default: `{}`
 
+### <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name)
+
+Description: The SKU name of the service plan.
+
+Type: `string`
+
+Default: `"P1v3"`
+
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
 Description: (Optional) Tags of the resource.
@@ -166,7 +176,7 @@ Description: The number of workers to allocate for this App Service Plan.
 
 Type: `number`
 
-Default: `null`
+Default: `3`
 
 ### <a name="input_zone_balancing_enabled"></a> [zone\_balancing\_enabled](#input\_zone\_balancing\_enabled)
 
@@ -183,6 +193,10 @@ The following outputs are exported:
 ### <a name="output_name"></a> [name](#output\_name)
 
 Description: Name of the app service plan
+
+### <a name="output_resource"></a> [resource](#output\_resource)
+
+Description: The full output of the resource.
 
 ### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
 
