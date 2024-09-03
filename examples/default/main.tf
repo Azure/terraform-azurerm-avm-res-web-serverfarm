@@ -49,9 +49,10 @@ module "test" {
 
   source = "../.."
 
-  enable_telemetry    = var.enable_telemetry
+  enable_telemetry = var.enable_telemetry
+
   name                = module.naming.app_service_plan.name_unique
   resource_group_name = azurerm_resource_group.this.name
-  sku_name            = "P1v3"
+  location            = azurerm_resource_group.this.location
   os_type             = "Windows"
 }

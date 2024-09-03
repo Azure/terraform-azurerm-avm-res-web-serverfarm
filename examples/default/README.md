@@ -55,10 +55,11 @@ module "test" {
 
   source = "../.."
 
-  enable_telemetry    = var.enable_telemetry
+  enable_telemetry = var.enable_telemetry
+
   name                = module.naming.app_service_plan.name_unique
   resource_group_name = azurerm_resource_group.this.name
-  sku_name            = "P1v3"
+  location            = azurerm_resource_group.this.location
   os_type             = "Windows"
 }
 ```
@@ -121,6 +122,10 @@ Description: Name of the app service plan
 Description: Name of the app service plan
 
 ### <a name="output_worker_count"></a> [worker\_count](#output\_worker\_count)
+
+Description: Name of the app service plan
+
+### <a name="output_zone_mappings"></a> [zone\_mappings](#output\_zone\_mappings)
 
 Description: Name of the app service plan
 

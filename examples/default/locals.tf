@@ -6,6 +6,8 @@ locals {
     "southcentralus",
     "canadacentral",
     "eastus",
-    "eastus2"
+    "eastus2",
+    "westus2",
+    "westus3"
   ]
 }

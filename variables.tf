@@ -1,3 +1,11 @@
+# A resource module MUST use location as a standard input
+# Please see https://azure.github.io/Azure-Verified-Modules/specs/shared/#id-rmnfr2---category-inputs---parametervariable-naming
+variable "location" {
+  type        = string
+  description = "The location where the resources will be deployed."
+  nullable    = false # Once migration from data sources is complete, this should be uncommented
+}
+
 variable "name" {
   type        = string
   description = "The name of the this resource."
@@ -14,7 +22,7 @@ variable "os_type" {
 
   validation {
     condition     = can(regex("Windows|Linux|WindowsContainer", var.os_type))
-    error_message = "The operating system type must be one of: 'Windows', 'Linux', or 'WindowsContainer'."
+    error_message = "The operating system type must be one of: `Windows`, `Linux`, or `WindowsContainer`."
   }
 }
 
@@ -38,12 +46,6 @@ This variable controls whether or not telemetry is enabled for the module.
 For more information see <https://aka.ms/avm/telemetryinfo>.
 If it is set to false, then no telemetry will be collected.
 DESCRIPTION
-}
-
-variable "location" {
-  type        = string
-  default     = null
-  description = "The location where the resources will be deployed."
 }
 
 variable "lock" {
@@ -97,7 +99,7 @@ variable "role_assignments" {
   - `description` - (Optional) The description of the role assignment.
   - `skip_service_principal_aad_check` - (Optional) If set to true, skips the Azure Active Directory check for the service principal in the tenant. Defaults to false.
   - `condition` - (Optional) The condition which will be used to scope the role assignment.
-  - `condition_version` - (Optional) The version of the condition syntax. Leave as `null` if you are not using a condition, if you are then valid values are '2.0'.
+  - `condition_version` - (Optional) The version of the condition syntax. Leave as `null` if you are not using a condition, if you are then valid values are `2.0`.
   - `delegated_managed_identity_resource_id` - (Optional) The delegated Azure Resource Id which contains a Managed Identity. Changing this forces a new resource to be created. This field is only used in cross-tenant scenario.
   - `principal_type` - (Optional) The type of the `principal_id`. Possible values are `User`, `Group` and `ServicePrincipal`. It is necessary to explicitly set this attribute when creating role assignments if the principal creating the assignment is constrained by ABAC rules that filters on the PrincipalType attribute.
   
@@ -108,8 +110,8 @@ variable "role_assignments" {
 
 variable "sku_name" {
   type        = string
-  default     = "P1v3"
-  description = "The SKU name of the service plan."
+  default     = "P1v2" # P1v2 is the minimum SKU for zone redundancy
+  description = "The SKU name of the service plan. Defaults to `P1v2`."
 
   validation {
     condition     = can(regex("B1|B2|B3|D1|F1|I1|I2|I3|I1v2|I2v2|I3v2|I4v2|I5v2|I6v2|P1v2|P2v2|P3v2|P0v3|P1v3|P2v3|P3v3|P1mv3|P2mv3|P3mv3|P4mv3|P5mv3|S1|S2|S3|SHARED|EP1|EP2|EP3|WS1|WS2|WS3|Y1", var.sku_name))
@@ -121,7 +123,7 @@ variable "sku_name" {
 variable "tags" {
   type        = map(string)
   default     = null
-  description = "(Optional) Tags of the resource."
+  description = "Tags of the resource."
 }
 
 variable "worker_count" {
@@ -133,5 +135,5 @@ variable "worker_count" {
 variable "zone_balancing_enabled" {
   type        = bool
   default     = true
-  description = "Should zone balancing be enabled for this App Service Plan."
+  description = "Should zone balancing be enabled for this App Service Plan? Defaults to `true`."
 }
