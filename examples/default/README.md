@@ -26,12 +26,6 @@ provider "azurerm" {
   }
 }
 
-
-## Section to provide a random Azure region for the resource group
-# This allows us to randomize the region for the resource group.
-locals {
-  test_regions = ["centralus", "southcentralus", "canadacentral", "eastus", "eastus2"]
-}
 resource "random_integer" "region_index" {
   max = length(local.test_regions) - 1
   min = 0
@@ -47,7 +41,7 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = "canadacentral"
+  location = local.test_regions[random_integer.region_index.result]
   name     = module.naming.resource_group.name_unique
 }
 
@@ -57,12 +51,16 @@ resource "azurerm_resource_group" "this" {
 # with a data source.
 module "test" {
   #source              = "Azure/avm-res-web-serverfarm/azurerm"
-  source              = "../.."
-  enable_telemetry    = var.enable_telemetry # see variables.tf
-  name                = "web-serverfarm"
+  # version = 0.1.0 # Update the version as needed
+
+  source = "../.."
+
+  enable_telemetry = var.enable_telemetry
+
+  name                = module.naming.app_service_plan.name_unique
   resource_group_name = azurerm_resource_group.this.name
-  sku_name            = "P1v3"
-  os_type             = "Linux"
+  location            = azurerm_resource_group.this.location
+  os_type             = "Windows"
 }
 ```
 
@@ -105,7 +103,31 @@ Default: `true`
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_location"></a> [location](#output\_location)
+
+Description: Location of the app service plan
+
+### <a name="output_name"></a> [name](#output\_name)
+
+Description: Name of the app service plan
+
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
+
+Description: Name of the app service plan
+
+### <a name="output_sku_name"></a> [sku\_name](#output\_sku\_name)
+
+Description: Name of the app service plan
+
+### <a name="output_worker_count"></a> [worker\_count](#output\_worker\_count)
+
+Description: Name of the app service plan
+
+### <a name="output_zone_redundant"></a> [zone\_redundant](#output\_zone\_redundant)
+
+Description: Name of the app service plan
 
 ## Modules
 
