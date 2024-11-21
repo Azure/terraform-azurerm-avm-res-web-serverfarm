@@ -4,7 +4,7 @@ data "azurerm_location" "region" {
 
 resource "azurerm_service_plan" "this" {
   location                     = var.location
-  name                         = var.name # calling code must supply the name
+  name                         = var.name
   os_type                      = var.os_type
   resource_group_name          = var.resource_group_name
   sku_name                     = var.sku_name
