@@ -48,7 +48,7 @@ resource "azurerm_resource_group" "this" {
 # This is the module call
 module "test" {
   # source              = "Azure/avm-res-web-serverfarm/azurerm"
-  # version = 0.2.0
+  # version = 0.2.1
 
   source = "../.."
 

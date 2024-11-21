@@ -11,7 +11,7 @@ variable "name" {
   description = "The name of the this resource."
 
   validation {
-    condition     = can(regex("^[a-z0-9-]{1,60}$", var.name))
+    condition     = can(regex("^[a-zA-Z0-9-]{1,60}$", var.name))
     error_message = "The name must be between 1 and 60 characters long and can only contain letters, numbers, hyphens and Unicode characters."
   }
 }
