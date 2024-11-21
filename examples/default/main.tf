@@ -1,9 +1,9 @@
 terraform {
-  required_version = ">= 1.3.0"
+  required_version = ">= 1.5.0"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">= 3.7.0, < 4.0.0"
+      version = ">= 3.71.0, < 4.0.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -40,12 +40,9 @@ resource "azurerm_resource_group" "this" {
 }
 
 # This is the module call
-# Do not specify location here due to the randomization above.
-# Leaving location as `null` will cause the module to use the resource group location
-# with a data source.
 module "test" {
-  #source              = "Azure/avm-res-web-serverfarm/azurerm"
-  # version = 0.1.0 # Update the version as needed
+  # source              = "Azure/avm-res-web-serverfarm/azurerm"
+  # version = 0.2.1
 
   source = "../.."
 
