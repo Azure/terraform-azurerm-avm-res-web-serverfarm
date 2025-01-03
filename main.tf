@@ -14,6 +14,11 @@ resource "azurerm_service_plan" "this" {
   tags                         = var.tags
   worker_count                 = var.zone_balancing_enabled ? ceil(var.worker_count / length(data.azurerm_location.region.zone_mappings)) * length(data.azurerm_location.region.zone_mappings) : var.worker_count
   zone_balancing_enabled       = var.zone_balancing_enabled
+
+  lifecycle = {
+   ignore_changes = [tags]
+  }
+
 }
 
 # required AVM resources interfaces
