@@ -34,8 +34,9 @@ module "naming" {
 }
 
 # This is required for resource modules
+# Hardcoding location due to quota constaints
 resource "azurerm_resource_group" "this" {
-  location = local.test_regions[random_integer.region_index.result]
+  location = "australiaeast"
   name     = module.naming.resource_group.name_unique
 }
 
