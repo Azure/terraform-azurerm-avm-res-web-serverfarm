@@ -3,17 +3,18 @@ data "azurerm_location" "region" {
 }
 
 resource "azurerm_service_plan" "this" {
-  location                     = var.location
-  name                         = var.name
-  os_type                      = var.os_type
-  resource_group_name          = var.resource_group_name
-  sku_name                     = var.sku_name
-  app_service_environment_id   = var.app_service_environment_id
-  maximum_elastic_worker_count = local.maximum_elastic_worker_count
-  per_site_scaling_enabled     = var.per_site_scaling_enabled
-  tags                         = var.tags
-  worker_count                 = var.zone_balancing_enabled ? ceil(var.worker_count / length(data.azurerm_location.region.zone_mappings)) * length(data.azurerm_location.region.zone_mappings) : var.worker_count
-  zone_balancing_enabled       = var.zone_balancing_enabled
+  location                        = var.location
+  name                            = var.name
+  os_type                         = var.os_type
+  resource_group_name             = var.resource_group_name
+  sku_name                        = var.sku_name
+  app_service_environment_id      = var.app_service_environment_id
+  maximum_elastic_worker_count    = local.maximum_elastic_worker_count
+  per_site_scaling_enabled        = var.per_site_scaling_enabled
+  premium_plan_auto_scale_enabled = startswith(var.sku_name, "P") ? var.premium_plan_auto_scale_enabled : false
+  tags                            = var.tags
+  worker_count                    = var.zone_balancing_enabled ? ceil(var.worker_count / length(data.azurerm_location.region.zone_mappings)) * length(data.azurerm_location.region.zone_mappings) : var.worker_count
+  zone_balancing_enabled          = var.zone_balancing_enabled
 }
 
 # required AVM resources interfaces
