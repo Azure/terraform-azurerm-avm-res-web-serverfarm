@@ -79,6 +79,12 @@ variable "per_site_scaling_enabled" {
   description = "Should per site scaling be enabled for this App Service Plan."
 }
 
+variable "premium_plan_auto_scale_enabled" {
+  type        = bool
+  default     = false
+  description = "Defaults to false. Should auto scaling be enabled for this App Service Plan. Only set to true if deploying a Premium SKU."
+}
+
 variable "role_assignments" {
   type = map(object({
     role_definition_id_or_name             = string
