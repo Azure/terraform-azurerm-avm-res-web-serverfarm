@@ -13,7 +13,7 @@ resource "azurerm_service_plan" "this" {
   per_site_scaling_enabled        = var.per_site_scaling_enabled
   premium_plan_auto_scale_enabled = startswith(var.sku_name, "P") ? var.premium_plan_auto_scale_enabled : false
   tags                            = var.tags
-  worker_count                    = var.zone_balancing_enabled ? ceil(var.worker_count / length(data.azurerm_location.region.zone_mappings)) * length(data.azurerm_location.region.zone_mappings) : var.worker_count
+  worker_count                    = local.worker_count
   zone_balancing_enabled          = var.zone_balancing_enabled
 }
 
