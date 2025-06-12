@@ -5,7 +5,7 @@ This deploys the module in its simplest form.
 
 ```hcl
 terraform {
-  required_version = ">= 1.5.0"
+  required_version = ">= 1.9, < 2.0"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -48,17 +48,13 @@ resource "azurerm_resource_group" "this" {
 
 # This is the module call
 module "test" {
-  # source              = "Azure/avm-res-web-serverfarm/azurerm"
-  # version = 0.2.1
-
   source = "../.."
 
-  enable_telemetry = var.enable_telemetry
-
-  name                = module.naming.app_service_plan.name_unique
-  resource_group_name = azurerm_resource_group.this.name
   location            = azurerm_resource_group.this.location
+  name                = module.naming.app_service_plan.name_unique
   os_type             = "Windows"
+  resource_group_name = azurerm_resource_group.this.name
+  enable_telemetry    = var.enable_telemetry
 }
 ```
 
@@ -67,7 +63,7 @@ module "test" {
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.5.0)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.9, < 2.0)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>=4.19.0, < 5.0.0)
 
