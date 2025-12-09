@@ -140,7 +140,7 @@ variable "worker_count" {
 
   validation {
     condition     = (var.zone_balancing_enabled && var.sku_name != "Y1") ? var.worker_count >= 2 : true
-    error_message = "When zone_balancing_enabled is true, worker_count must be at least 2."
+    error_message = "When zone_balancing_enabled is true, worker_count must be at least 2 (except for Y1 SKU which uses 0 workers)."
   }
 }
 
