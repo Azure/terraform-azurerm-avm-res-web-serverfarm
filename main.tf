@@ -10,7 +10,7 @@ resource "azurerm_service_plan" "this" {
   premium_plan_auto_scale_enabled = startswith(var.sku_name, "P") ? var.premium_plan_auto_scale_enabled : false
   tags                            = var.tags
   worker_count                    = local.worker_count
-  zone_balancing_enabled          = local.zone_balancing_enabled
+  zone_balancing_enabled          = var.zone_balancing_enabled
 }
 
 # required AVM resources interfaces
