@@ -3,8 +3,6 @@ locals {
   role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
   worker_count = (
     var.sku_name == "Y1" ? 0 :
-    var.zone_balancing_enabled ?
-    ceil(var.worker_count / length(data.azurerm_location.region.zone_mappings)) * length(data.azurerm_location.region.zone_mappings) :
     var.worker_count
   )
 }

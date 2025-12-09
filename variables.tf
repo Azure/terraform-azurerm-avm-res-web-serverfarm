@@ -137,6 +137,11 @@ variable "worker_count" {
   type        = number
   default     = 3
   description = "The number of workers to allocate for this App Service Plan."
+
+  validation {
+    condition     = var.zone_balancing_enabled ? var.worker_count >= 2 : true
+    error_message = "When zone_balancing_enabled is true, worker_count must be at least 2."
+  }
 }
 
 variable "zone_balancing_enabled" {
