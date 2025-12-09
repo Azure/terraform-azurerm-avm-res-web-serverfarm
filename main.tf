@@ -1,7 +1,3 @@
-data "azurerm_location" "region" {
-  location = var.location
-}
-
 resource "azurerm_service_plan" "this" {
   location                        = var.location
   name                            = var.name
