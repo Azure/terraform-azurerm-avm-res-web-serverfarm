@@ -5,4 +5,8 @@ locals {
     can(regex("Y1|FC1", var.sku_name)) ? 0 :
     var.worker_count
   )
+  zone_balancing_enabled = (
+    can(regex("Y1|FC1", var.sku_name)) ? false :
+    var.zone_balancing_enabled
+  )
 }
