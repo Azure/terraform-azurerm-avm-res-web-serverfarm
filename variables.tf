@@ -139,7 +139,7 @@ variable "worker_count" {
   description = "The number of workers to allocate for this App Service Plan. Defaults to 3 for most SKUs. For Y1 and FC1 SKUs, this parameter is automatically omitted as these consumption-based plans don't support worker count configuration."
 
   validation {
-    condition     = var.worker_count == null || (var.zone_balancing_enabled && !can(regex("Y1|FC1", var.sku_name)) ? var.worker_count >= 2 : true)
+    condition     = var.worker_count == null || ((var.zone_balancing_enabled && !can(regex("Y1|FC1", var.sku_name))) ? var.worker_count >= 2 : true)
     error_message = "When zone_balancing_enabled is true, worker_count must be at least 2 (except for Y1 and FC1 SKUs where worker_count should not be specified)."
   }
 }
