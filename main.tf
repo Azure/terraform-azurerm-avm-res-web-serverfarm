@@ -9,8 +9,11 @@ resource "azurerm_service_plan" "this" {
   per_site_scaling_enabled        = var.per_site_scaling_enabled
   premium_plan_auto_scale_enabled = startswith(var.sku_name, "P") ? var.premium_plan_auto_scale_enabled : false
   tags                            = var.tags
-  worker_count                    = local.worker_count
-  zone_balancing_enabled          = var.zone_balancing_enabled
+  # Only set worker_count for non-consumption SKUs (Y1 and FC1 don't support worker_count parameter)
+  # For consumption SKUs, omit the parameter entirely by setting to null
+  # For other SKUs, use provided value or default to 3
+  worker_count           = can(regex("Y1|FC1", var.sku_name)) ? null : coalesce(var.worker_count, 3)
+  zone_balancing_enabled = var.zone_balancing_enabled
 }
 
 # required AVM resources interfaces

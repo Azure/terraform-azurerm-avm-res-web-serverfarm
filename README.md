@@ -179,11 +179,11 @@ Default: `null`
 
 ### <a name="input_worker_count"></a> [worker\_count](#input\_worker\_count)
 
-Description: The number of workers to allocate for this App Service Plan.
+Description: The number of workers to allocate for this App Service Plan. Defaults to 3 for most SKUs. For Y1 and FC1 SKUs, this parameter is automatically omitted as these consumption-based plans don't support worker count configuration.
 
 Type: `number`
 
-Default: `3`
+Default: `null`
 
 ### <a name="input_zone_balancing_enabled"></a> [zone\_balancing\_enabled](#input\_zone\_balancing\_enabled)
 
