@@ -71,7 +71,7 @@ variable "lock" {
 variable "maximum_elastic_worker_count" {
   type        = number
   default     = null
-  description = "The minimum number of workers to allocate for this App Service Plan."
+  description = "The maximum number of workers to allocate for this App Service Plan."
 }
 
 variable "per_site_scaling_enabled" {
