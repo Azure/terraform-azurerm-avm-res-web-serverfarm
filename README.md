@@ -108,7 +108,7 @@ Default: `null`
 
 ### <a name="input_maximum_elastic_worker_count"></a> [maximum\_elastic\_worker\_count](#input\_maximum\_elastic\_worker\_count)
 
-Description: The minimum number of workers to allocate for this App Service Plan.
+Description: The maximum number of workers to allocate for this App Service Plan.
 
 Type: `number`
 
