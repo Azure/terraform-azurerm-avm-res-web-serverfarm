@@ -1,42 +1,111 @@
-data "azurerm_location" "region" {
-  location = var.location
+# AVM Interfaces module for locks, role assignments, diagnostic settings, and managed identities
+module "avm_interfaces" {
+  source  = "Azure/avm-utl-interfaces/azure"
+  version = "0.5.0"
+
+  diagnostic_settings                       = var.diagnostic_settings
+  enable_telemetry                          = var.enable_telemetry
+  lock                                      = var.lock
+  managed_identities                        = var.managed_identities
+  role_assignment_definition_lookup_enabled = true
+  role_assignment_definition_scope          = "/subscriptions/${data.azapi_client_config.this.subscription_id}"
+  role_assignments                          = var.role_assignments
 }
 
-resource "azurerm_service_plan" "this" {
-  location                        = var.location
-  name                            = var.name
-  os_type                         = var.os_type
-  resource_group_name             = var.resource_group_name
-  sku_name                        = var.sku_name
-  app_service_environment_id      = var.app_service_environment_id
-  maximum_elastic_worker_count    = local.maximum_elastic_worker_count
-  per_site_scaling_enabled        = var.per_site_scaling_enabled
-  premium_plan_auto_scale_enabled = startswith(var.sku_name, "P") ? var.premium_plan_auto_scale_enabled : false
-  tags                            = var.tags
-  worker_count                    = local.worker_count
-  zone_balancing_enabled          = var.zone_balancing_enabled
+resource "azapi_resource" "this" {
+  location  = var.location
+  name      = var.name
+  parent_id = var.parent_id
+  type      = "Microsoft.Web/serverfarms@2024-04-01"
+  body = {
+    kind = local.kind
+    properties = {
+      elasticScaleEnabled       = local.elastic_scale_enabled
+      hostingEnvironmentProfile = var.app_service_environment_id != null ? { id = var.app_service_environment_id } : null
+      hyperV                    = var.os_type == "WindowsContainer"
+      maximumElasticWorkerCount = local.maximum_elastic_worker_count
+      perSiteScaling            = var.per_site_scaling_enabled
+      reserved                  = var.os_type == "Linux"
+      targetWorkerCount         = var.worker_count
+      zoneRedundant             = var.zone_balancing_enabled
+    }
+    sku = {
+      name     = var.sku_name
+      capacity = var.worker_count
+    }
+  }
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  schema_validation_enabled = false
+  tags                      = var.tags
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+
+  dynamic "identity" {
+    for_each = module.avm_interfaces.managed_identities_azapi != null ? { this = module.avm_interfaces.managed_identities_azapi } : {}
+
+    content {
+      type         = identity.value.type
+      identity_ids = identity.value.identity_ids
+    }
+  }
 }
 
-# required AVM resources interfaces
-resource "azurerm_management_lock" "this" {
+moved {
+  from = azurerm_service_plan.this
+  to   = azapi_resource.this
+}
+
+moved {
+  from = azurerm_management_lock.this
+  to   = azapi_resource.lock
+}
+
+moved {
+  from = azurerm_role_assignment.this
+  to   = azapi_resource.role_assignment
+}
+
+data "azapi_client_config" "this" {}
+
+# Lock
+resource "azapi_resource" "lock" {
   count = var.lock != null ? 1 : 0
 
-  lock_level = var.lock.kind
-  name       = coalesce(var.lock.name, "lock-${var.lock.kind}")
-  scope      = azurerm_service_plan.this.id
-  notes      = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
+  name           = module.avm_interfaces.lock_azapi.name
+  parent_id      = azapi_resource.this.id
+  type           = module.avm_interfaces.lock_azapi.type
+  body           = module.avm_interfaces.lock_azapi.body
+  create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  update_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 }
 
+# Role Assignments
+resource "azapi_resource" "role_assignment" {
+  for_each = module.avm_interfaces.role_assignments_azapi
 
-resource "azurerm_role_assignment" "this" {
-  for_each = var.role_assignments
+  name           = each.value.name
+  parent_id      = azapi_resource.this.id
+  type           = each.value.type
+  body           = each.value.body
+  create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  update_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+}
 
-  principal_id                           = each.value.principal_id
-  scope                                  = azurerm_service_plan.this.id
-  condition                              = each.value.condition
-  condition_version                      = each.value.condition_version
-  delegated_managed_identity_resource_id = each.value.delegated_managed_identity_resource_id
-  role_definition_id                     = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? each.value.role_definition_id_or_name : null
-  role_definition_name                   = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? null : each.value.role_definition_id_or_name
-  skip_service_principal_aad_check       = each.value.skip_service_principal_aad_check
+# Diagnostic Settings
+resource "azapi_resource" "diagnostic_setting" {
+  for_each = module.avm_interfaces.diagnostic_settings_azapi
+
+  name           = each.value.name
+  parent_id      = azapi_resource.this.id
+  type           = each.value.type
+  body           = each.value.body
+  create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  update_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 }

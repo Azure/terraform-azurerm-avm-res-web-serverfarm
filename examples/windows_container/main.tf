@@ -37,12 +37,14 @@ resource "azapi_resource" "resource_group" {
 }
 
 # This is the module call
+# Windows Container requires a Premium v3 or higher SKU
 module "test" {
   source = "../.."
 
   location         = azapi_resource.resource_group.location
   name             = module.naming.app_service_plan.name_unique
-  os_type          = "Windows"
+  os_type          = "WindowsContainer"
   parent_id        = azapi_resource.resource_group.id
   enable_telemetry = var.enable_telemetry
+  sku_name         = "P1v3"
 }
