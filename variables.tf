@@ -38,10 +38,24 @@ variable "app_service_environment_id" {
 
 variable "diagnostic_settings" {
   type = map(object({
-    name                                     = optional(string, null)
-    log_categories                           = optional(set(string), [])
-    log_groups                               = optional(set(string), ["allLogs"])
-    metric_categories                        = optional(set(string), ["AllMetrics"])
+    name = optional(string, null)
+    logs = optional(set(object({
+      category       = optional(string, null)
+      category_group = optional(string, null)
+      enabled        = optional(bool, true)
+      retention_policy = optional(object({
+        days    = optional(number, 0)
+        enabled = optional(bool, false)
+      }), {})
+    })), [])
+    metrics = optional(set(object({
+      category = optional(string, null)
+      enabled  = optional(bool, true)
+      retention_policy = optional(object({
+        days    = optional(number, 0)
+        enabled = optional(bool, false)
+      }), {})
+    })), [])
     log_analytics_destination_type           = optional(string, "Dedicated")
     workspace_resource_id                    = optional(string, null)
     storage_account_resource_id              = optional(string, null)
@@ -51,7 +65,7 @@ variable "diagnostic_settings" {
   }))
   default     = {}
   description = <<DESCRIPTION
-  A map of diagnostic settings to create on the resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
+  A map of diagnostic settings to create on the App Service Environment (ASE). The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
 
   - `name` - (Optional) The name of the diagnostic setting. One will be generated if not set, however this will not be unique if you want to create multiple diagnostic setting resources.
   - `log_categories` - (Optional) A set of log categories to send to the log analytics workspace. Defaults to `[]`.
@@ -65,6 +79,20 @@ variable "diagnostic_settings" {
   - `marketplace_partner_resource_id` - (Optional) The full ARM resource ID of the Marketplace resource to which you would like to send Diagnostic Logs.
   DESCRIPTION
   nullable    = false
+
+  validation {
+    condition     = alltrue([for _, v in var.diagnostic_settings : contains(["Dedicated", "AzureDiagnostics"], v.log_analytics_destination_type)])
+    error_message = "Log analytics destination type must be one of: 'Dedicated', 'AzureDiagnostics'."
+  }
+  validation {
+    condition = alltrue(
+      [
+        for _, v in var.diagnostic_settings :
+        v.workspace_resource_id != null || v.storage_account_resource_id != null || v.event_hub_authorization_rule_resource_id != null || v.marketplace_partner_resource_id != null
+      ]
+    )
+    error_message = "At least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id`, must be set."
+  }
 }
 
 variable "enable_telemetry" {
@@ -130,6 +158,22 @@ variable "premium_plan_auto_scale_enabled" {
   description = "Defaults to false. Should elastic scale be enabled for this App Service Plan. Only set to true if deploying a Premium or Elastic Premium SKU."
 }
 
+variable "retry" {
+  type = object({
+    error_message_regex  = optional(list(string), ["ScopeLocked"])
+    interval_seconds     = optional(number, null)
+    max_interval_seconds = optional(number, null)
+  })
+  default     = null
+  description = <<DESCRIPTION
+  The retry configuration for azapi resources. The following properties can be specified:
+
+  - `error_message_regex` - (Required) A list of regular expressions to match against error messages. If any match, the request will be retried.
+  - `interval_seconds` - (Optional) The base number of seconds to wait between retries. Default is `10`.
+  - `max_interval_seconds` - (Optional) The maximum number of seconds to wait between retries. Default is `180`.
+  DESCRIPTION
+}
+
 variable "role_assignments" {
   type = map(object({
     role_definition_id_or_name             = string
@@ -174,6 +218,24 @@ variable "tags" {
   type        = map(string)
   default     = null
   description = "Tags of the resource."
+}
+
+variable "timeouts" {
+  type = object({
+    create = optional(string, null)
+    delete = optional(string, null)
+    read   = optional(string, null)
+    update = optional(string, null)
+  })
+  default     = null
+  description = <<DESCRIPTION
+  The timeout configuration for azapi resources. The following properties can be specified:
+
+  - `create` - (Optional) The timeout for create operations e.g. `"30m"`, `"1h"`.
+  - `delete` - (Optional) The timeout for delete operations e.g. `"30m"`, `"1h"`.
+  - `read` - (Optional) The timeout for read operations e.g. `"30m"`, `"1h"`.
+  - `update` - (Optional) The timeout for update operations e.g. `"30m"`, `"1h"`.
+  DESCRIPTION
 }
 
 variable "worker_count" {

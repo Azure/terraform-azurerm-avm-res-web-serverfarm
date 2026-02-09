@@ -79,7 +79,7 @@ Default: `null`
 
 ### <a name="input_diagnostic_settings"></a> [diagnostic\_settings](#input\_diagnostic\_settings)
 
-Description:   A map of diagnostic settings to create on the resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
+Description:   A map of diagnostic settings to create on the App Service Environment (ASE). The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
 
   - `name` - (Optional) The name of the diagnostic setting. One will be generated if not set, however this will not be unique if you want to create multiple diagnostic setting resources.
   - `log_categories` - (Optional) A set of log categories to send to the log analytics workspace. Defaults to `[]`.
@@ -96,10 +96,24 @@ Type:
 
 ```hcl
 map(object({
-    name                                     = optional(string, null)
-    log_categories                           = optional(set(string), [])
-    log_groups                               = optional(set(string), ["allLogs"])
-    metric_categories                        = optional(set(string), ["AllMetrics"])
+    name = optional(string, null)
+    logs = optional(set(object({
+      category       = optional(string, null)
+      category_group = optional(string, null)
+      enabled        = optional(bool, true)
+      retention_policy = optional(object({
+        days    = optional(number, 0)
+        enabled = optional(bool, false)
+      }), {})
+    })), [])
+    metrics = optional(set(object({
+      category = optional(string, null)
+      enabled  = optional(bool, true)
+      retention_policy = optional(object({
+        days    = optional(number, 0)
+        enabled = optional(bool, false)
+      }), {})
+    })), [])
     log_analytics_destination_type           = optional(string, "Dedicated")
     workspace_resource_id                    = optional(string, null)
     storage_account_resource_id              = optional(string, null)
@@ -181,6 +195,26 @@ Type: `bool`
 
 Default: `false`
 
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description:   The retry configuration for azapi resources. The following properties can be specified:
+
+  - `error_message_regex` - (Required) A list of regular expressions to match against error messages. If any match, the request will be retried.
+  - `interval_seconds` - (Optional) The base number of seconds to wait between retries. Default is `10`.
+  - `max_interval_seconds` - (Optional) The maximum number of seconds to wait between retries. Default is `180`.
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string), ["ScopeLocked"])
+    interval_seconds     = optional(number, null)
+    max_interval_seconds = optional(number, null)
+  })
+```
+
+Default: `null`
+
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
 Description:   A map of role assignments to create on the resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
@@ -226,6 +260,28 @@ Default: `"P1v2"`
 Description: Tags of the resource.
 
 Type: `map(string)`
+
+Default: `null`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description:   The timeout configuration for azapi resources. The following properties can be specified:
+
+  - `create` - (Optional) The timeout for create operations e.g. `"30m"`, `"1h"`.
+  - `delete` - (Optional) The timeout for delete operations e.g. `"30m"`, `"1h"`.
+  - `read` - (Optional) The timeout for read operations e.g. `"30m"`, `"1h"`.
+  - `update` - (Optional) The timeout for update operations e.g. `"30m"`, `"1h"`.
+
+Type:
+
+```hcl
+object({
+    create = optional(string, null)
+    delete = optional(string, null)
+    read   = optional(string, null)
+    update = optional(string, null)
+  })
+```
 
 Default: `null`
 

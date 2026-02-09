@@ -73,7 +73,12 @@ module "test" {
     to_law = {
       name                  = "diag-to-law"
       workspace_resource_id = azapi_resource.log_analytics_workspace.id
-      metric_categories     = ["AllMetrics"]
+      metrics = [
+        {
+          category = "AllMetrics"
+          enabled  = true
+        }
+      ]
     }
   }
   enable_telemetry = var.enable_telemetry
