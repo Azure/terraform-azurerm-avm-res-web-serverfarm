@@ -11,5 +11,5 @@ locals {
     "app"
   )
   # Maximum elastic worker count is only applicable to Elastic Premium and WS SKUs
-  maximum_elastic_worker_count = can(regex("^(EP|WS)", var.sku_name)) ? var.maximum_elastic_worker_count : null
+  maximum_elastic_worker_count = can(regex("^(EP|WS)", var.sku_name)) ? var.maximum_elastic_worker_count : var.worker_count
 }

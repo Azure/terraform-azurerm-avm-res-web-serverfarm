@@ -43,6 +43,11 @@ resource "azapi_resource" "resource_group" {
   type     = "Microsoft.Resources/resourceGroups@2024-03-01"
 }
 
+moved {
+  from = azurerm_resource_group.this
+  to   = azapi_resource.resource_group
+}
+
 # This is the module call
 module "test" {
   source = "../.."
@@ -95,10 +100,6 @@ Default: `true`
 ## Outputs
 
 The following outputs are exported:
-
-### <a name="output_location"></a> [location](#output\_location)
-
-Description: Location of the app service plan
 
 ### <a name="output_name"></a> [name](#output\_name)
 

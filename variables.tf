@@ -26,8 +26,8 @@ variable "os_type" {
 
 variable "parent_id" {
   type        = string
-  nullable    = false
   description = "The resource ID of the resource group in which to create this resource."
+  nullable    = false
 }
 
 variable "app_service_environment_id" {
@@ -114,7 +114,7 @@ variable "managed_identities" {
 
 variable "maximum_elastic_worker_count" {
   type        = number
-  default     = null
+  default     = 3
   description = "The maximum number of total workers allowed for this ElasticScaleEnabled App Service Plan."
 }
 

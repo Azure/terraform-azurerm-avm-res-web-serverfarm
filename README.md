@@ -163,7 +163,7 @@ Description: The maximum number of total workers allowed for this ElasticScaleEn
 
 Type: `number`
 
-Default: `null`
+Default: `3`
 
 ### <a name="input_per_site_scaling_enabled"></a> [per\_site\_scaling\_enabled](#input\_per\_site\_scaling\_enabled)
 
@@ -252,10 +252,6 @@ The following outputs are exported:
 ### <a name="output_name"></a> [name](#output\_name)
 
 Description: Name of the app service plan
-
-### <a name="output_resource"></a> [resource](#output\_resource)
-
-Description: The full output of the resource.
 
 ### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
 

@@ -16,22 +16,34 @@ resource "azapi_resource" "this" {
   location  = var.location
   name      = var.name
   parent_id = var.parent_id
-  type      = "Microsoft.Web/serverfarms@2024-04-01"
+  type      = "Microsoft.Web/serverfarms@2025-03-01"
   body = {
     kind = local.kind
     properties = {
+      asyncScalingEnabled       = null
+      freeOfferExpirationTime   = null
+      isCustomMode              = null
+      isSpot                    = null
+      isXenon                   = null
+      kubeEnvironmentProfile    = null
       elasticScaleEnabled       = local.elastic_scale_enabled
       hostingEnvironmentProfile = var.app_service_environment_id != null ? { id = var.app_service_environment_id } : null
       hyperV                    = var.os_type == "WindowsContainer"
       maximumElasticWorkerCount = local.maximum_elastic_worker_count
       perSiteScaling            = var.per_site_scaling_enabled
+      spotExpirationTime        = null
       reserved                  = var.os_type == "Linux"
-      targetWorkerCount         = var.worker_count
+      targetWorkerCount         = null
+      targetWorkerSizeId        = null
+      workerTierName            = null
       zoneRedundant             = var.zone_balancing_enabled
     }
     sku = {
       name     = var.sku_name
       capacity = var.worker_count
+      family   = null
+      size     = null
+      tier     = null
     }
   }
   create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
@@ -48,6 +60,24 @@ resource "azapi_resource" "this" {
       type         = identity.value.type
       identity_ids = identity.value.identity_ids
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      body.properties.asyncScalingEnabled,
+      body.properties.freeOfferExpirationTime,
+      body.properties.isCustomMode,
+      body.properties.isSpot,
+      body.properties.isXenon,
+      body.properties.kubeEnvironmentProfile,
+      body.properties.spotExpirationTime,
+      body.properties.targetWorkerCount,
+      body.properties.targetWorkerSizeId,
+      body.properties.workerTierName,
+      body.sku.family,
+      body.sku.size,
+      body.sku.tier
+    ]
   }
 }
 

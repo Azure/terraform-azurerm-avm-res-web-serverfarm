@@ -36,6 +36,11 @@ resource "azapi_resource" "resource_group" {
   type     = "Microsoft.Resources/resourceGroups@2024-03-01"
 }
 
+moved {
+  from = azurerm_resource_group.this
+  to   = azapi_resource.resource_group
+}
+
 # This is the module call
 module "test" {
   source = "../.."
