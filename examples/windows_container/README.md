@@ -98,10 +98,6 @@ Default: `true`
 
 The following outputs are exported:
 
-### <a name="output_location"></a> [location](#output\_location)
-
-Description: Location of the app service plan
-
 ### <a name="output_name"></a> [name](#output\_name)
 
 Description: Name of the app service plan

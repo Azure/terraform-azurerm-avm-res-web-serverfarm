@@ -1,8 +1,3 @@
-output "location" {
-  description = "Location of the app service plan"
-  value       = module.test.resource.location
-}
-
 output "name" {
   description = "Name of the app service plan"
   value       = module.test.name
