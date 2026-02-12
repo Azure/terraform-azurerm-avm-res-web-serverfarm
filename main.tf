@@ -22,7 +22,7 @@ resource "azapi_resource" "this" {
     properties = {
       asyncScalingEnabled       = null
       freeOfferExpirationTime   = null
-      isCustomMode              = null
+      isCustomMode              = var.os_type == "WindowsManagedInstance"
       isSpot                    = null
       isXenon                   = null
       kubeEnvironmentProfile    = null
@@ -78,7 +78,6 @@ resource "azapi_resource" "this" {
     ignore_changes = [
       body.properties.asyncScalingEnabled,
       body.properties.freeOfferExpirationTime,
-      body.properties.isCustomMode,
       body.properties.isSpot,
       body.properties.isXenon,
       body.properties.kubeEnvironmentProfile,

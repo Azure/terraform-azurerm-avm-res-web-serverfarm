@@ -19,7 +19,7 @@ variable "os_type" {
   description = "The operating system type of the service plan. Possible values are `Windows`, `Linux` or `WindowsContainer`."
 
   validation {
-    condition     = contains(["Windows", "Linux", "WindowsContainer"], var.os_type)
+    condition     = contains(["Windows", "Linux", "WindowsContainer", "WindowsManagedInstance"], var.os_type)
     error_message = "The operating system type must be one of: `Windows`, `Linux`, or `WindowsContainer`."
   }
 }
