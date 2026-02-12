@@ -38,9 +38,10 @@ module "naming" {
 # This is required for resource modules
 # Hardcoding location due to quota constraints
 resource "azapi_resource" "resource_group" {
-  location = "australiaeast"
-  name     = module.naming.resource_group.name_unique
-  type     = "Microsoft.Resources/resourceGroups@2024-03-01"
+  location               = "australiaeast"
+  name                   = module.naming.resource_group.name_unique
+  type                   = "Microsoft.Resources/resourceGroups@2024-03-01"
+  response_export_values = []
 }
 
 # A Log Analytics workspace to send diagnostic logs to
@@ -57,14 +58,16 @@ resource "azapi_resource" "log_analytics_workspace" {
       retentionInDays = 30
     }
   }
+  response_export_values = []
 }
 
 # A user assigned managed identity for role assignment demonstration
 resource "azapi_resource" "managed_identity" {
-  location  = azapi_resource.resource_group.location
-  name      = module.naming.user_assigned_identity.name_unique
-  parent_id = azapi_resource.resource_group.id
-  type      = "Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31"
+  location               = azapi_resource.resource_group.location
+  name                   = module.naming.user_assigned_identity.name_unique
+  parent_id              = azapi_resource.resource_group.id
+  type                   = "Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31"
+  response_export_values = ["properties.principalId"]
 }
 
 # This is the module call

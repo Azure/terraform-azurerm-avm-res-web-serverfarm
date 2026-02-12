@@ -40,19 +40,19 @@ module "naming" {
 # This is required for resource modules
 # Hardcoding location due to quota constraints
 resource "azapi_resource" "resource_group" {
-  location                  = "australiaeast"
-  name                      = module.naming.resource_group.name_unique
-  type                      = "Microsoft.Resources/resourceGroups@2024-03-01"
-  response_export_values    = []
+  location               = "australiaeast"
+  name                   = module.naming.resource_group.name_unique
+  type                   = "Microsoft.Resources/resourceGroups@2024-03-01"
+  response_export_values = []
 }
 
 # A user assigned managed identity for the Managed Instance plan default identity
 resource "azapi_resource" "managed_identity" {
-  location                  = azapi_resource.resource_group.location
-  name                      = module.naming.user_assigned_identity.name_unique
-  parent_id                 = azapi_resource.resource_group.id
-  type                      = "Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31"
-  response_export_values    = ["properties.principalId"]
+  location               = azapi_resource.resource_group.location
+  name                   = module.naming.user_assigned_identity.name_unique
+  parent_id              = azapi_resource.resource_group.id
+  type                   = "Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31"
+  response_export_values = ["properties.principalId"]
 }
 
 # Storage account to host the install scripts package
@@ -83,24 +83,23 @@ resource "azapi_resource" "storage_account" {
 
 # Blob container to hold scripts.zip
 resource "azapi_resource" "blob_container" {
-  name                      = "scripts"
-  parent_id                 = "${azapi_resource.storage_account.id}/blobServices/default"
-  type                      = "Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01"
-  response_export_values    = []
+  name      = "scripts"
+  parent_id = "${azapi_resource.storage_account.id}/blobServices/default"
+  type      = "Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01"
   body = {
     properties = {
       publicAccess = "None"
     }
   }
+  response_export_values = []
 }
 
 # Grant the managed identity "Storage Blob Data Reader" on the storage account
 # so the plan can pull install scripts
 resource "azapi_resource" "role_assignment_blob_reader" {
-  name                      = "7d2b4b60-b4a1-4e5e-a123-abcdef012345"
-  parent_id                 = azapi_resource.storage_account.id
-  type                      = "Microsoft.Authorization/roleAssignments@2022-04-01"
-  response_export_values    = []
+  name      = "7d2b4b60-b4a1-4e5e-a123-abcdef012345"
+  parent_id = azapi_resource.storage_account.id
+  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
   body = {
     properties = {
       principalId      = azapi_resource.managed_identity.output.properties.principalId
@@ -108,6 +107,7 @@ resource "azapi_resource" "role_assignment_blob_reader" {
       roleDefinitionId = "/subscriptions/${data.azapi_client_config.this.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/2a2b9908-6ea1-4ae2-8e65-a410df84e7d1"
     }
   }
+  response_export_values = []
 
   depends_on = [azapi_resource.blob_container]
 }
@@ -129,10 +129,9 @@ resource "azurerm_storage_blob" "scripts_zip" {
 # Grant the current user "Storage Blob Data Contributor" on the storage account
 # so the azurerm provider can upload the blob via Azure AD auth
 resource "azapi_resource" "role_assignment_blob_contributor_current_user" {
-  name                      = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-  parent_id                 = azapi_resource.storage_account.id
-  type                      = "Microsoft.Authorization/roleAssignments@2022-04-01"
-  response_export_values    = []
+  name      = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  parent_id = azapi_resource.storage_account.id
+  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
   body = {
     properties = {
       principalId      = data.azapi_client_config.this.object_id
@@ -140,6 +139,7 @@ resource "azapi_resource" "role_assignment_blob_contributor_current_user" {
       roleDefinitionId = "/subscriptions/${data.azapi_client_config.this.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe"
     }
   }
+  response_export_values = []
 
   depends_on = [azapi_resource.blob_container]
 }

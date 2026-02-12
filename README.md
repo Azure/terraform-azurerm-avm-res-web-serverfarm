@@ -328,7 +328,7 @@ Default: `null`
 
 ### <a name="input_worker_count"></a> [worker\_count](#input\_worker\_count)
 
-Description: The number of workers to allocate for this App Service Plan.
+Description: The number of workers to allocate for this App Service Plan. Defaults to `3`, which is the recommended minimum for production workloads.
 
 Type: `number`
 
