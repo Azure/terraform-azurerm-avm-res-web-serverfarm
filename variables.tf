@@ -106,6 +106,25 @@ DESCRIPTION
   nullable    = false
 }
 
+variable "install_scripts" {
+  type = list(object({
+    name = string
+    source = object({
+      type       = optional(string, "RemoteAzureBlob")
+      source_uri = string
+    })
+  }))
+  default     = null
+  description = <<DESCRIPTION
+  Optional: A list of install scripts to run on the Managed Instance App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
+
+  - `name` - (Required) The name of the install script (e.g. `"FontInstaller"`).
+  - `source` - (Required) The source configuration for the install script.
+    - `type` - (Optional) The type of the source. Defaults to `"RemoteAzureBlob"`.
+    - `source_uri` - (Required) The URI of the install script package (e.g. a blob URI to a `.zip` file).
+  DESCRIPTION
+}
+
 variable "lock" {
   type = object({
     kind = string
@@ -150,6 +169,20 @@ variable "per_site_scaling_enabled" {
   type        = bool
   default     = false
   description = "Should per site scaling be enabled for this App Service Plan."
+}
+
+variable "plan_default_identity" {
+  type = object({
+    identity_type                      = optional(string, "UserAssigned")
+    user_assigned_identity_resource_id = string
+  })
+  default     = null
+  description = <<DESCRIPTION
+  Optional: The default identity configuration for the Managed Instance App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
+
+  - `identity_type` - (Optional) The type of the identity. Defaults to `"UserAssigned"`.
+  - `user_assigned_identity_resource_id` - (Required) The resource ID of the user-assigned managed identity to use as the plan default identity.
+  DESCRIPTION
 }
 
 variable "premium_plan_auto_scale_enabled" {

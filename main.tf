@@ -30,13 +30,26 @@ resource "azapi_resource" "this" {
       hostingEnvironmentProfile = var.app_service_environment_id != null ? { id = var.app_service_environment_id } : null
       hyperV                    = var.os_type == "WindowsContainer"
       maximumElasticWorkerCount = local.maximum_elastic_worker_count
-      perSiteScaling            = var.per_site_scaling_enabled
-      spotExpirationTime        = null
-      reserved                  = var.os_type == "Linux"
-      targetWorkerCount         = null
-      targetWorkerSizeId        = null
-      workerTierName            = null
-      zoneRedundant             = var.zone_balancing_enabled
+      installScripts = var.install_scripts != null ? [
+        for script in var.install_scripts : {
+          name = script.name
+          source = {
+            type      = script.source.type
+            sourceUri = script.source.source_uri
+          }
+        }
+      ] : null
+      perSiteScaling = var.per_site_scaling_enabled
+      planDefaultIdentity = var.plan_default_identity != null ? {
+        identityType                   = var.plan_default_identity.identity_type
+        userAssignedIdentityResourceId = var.plan_default_identity.user_assigned_identity_resource_id
+      } : null
+      spotExpirationTime = null
+      reserved           = var.os_type == "Linux"
+      targetWorkerCount  = null
+      targetWorkerSizeId = null
+      workerTierName     = null
+      zoneRedundant      = var.zone_balancing_enabled
     }
     sku = {
       name     = var.sku_name
