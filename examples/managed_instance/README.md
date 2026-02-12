@@ -76,7 +76,7 @@ resource "azapi_resource" "storage_account" {
       }
     }
     sku = {
-      name = "Standard_LRS"
+      name = "Standard_ZRS"
     }
   }
 }
