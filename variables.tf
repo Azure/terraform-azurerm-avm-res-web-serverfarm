@@ -274,7 +274,7 @@ variable "timeouts" {
 variable "worker_count" {
   type        = number
   default     = 3
-  description = "The number of workers to allocate for this App Service Plan."
+  description = "The number of workers to allocate for this App Service Plan. Defaults to `3`, which is the recommended minimum for production workloads."
 }
 
 variable "zone_balancing_enabled" {

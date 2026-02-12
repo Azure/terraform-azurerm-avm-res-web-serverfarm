@@ -6,6 +6,10 @@ terraform {
       source  = "Azure/azapi"
       version = "~> 2.4"
     }
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">= 3.0, < 5.0"
+    }
     random = {
       source  = "hashicorp/random"
       version = ">= 3.5.0, < 4.0.0"
@@ -14,6 +18,11 @@ terraform {
 }
 
 provider "azapi" {}
+
+provider "azurerm" {
+  features {}
+  storage_use_azuread = true
+}
 
 resource "random_integer" "region_index" {
   max = length(local.test_regions) - 1
@@ -31,17 +40,19 @@ module "naming" {
 # This is required for resource modules
 # Hardcoding location due to quota constraints
 resource "azapi_resource" "resource_group" {
-  location = "australiaeast"
-  name     = module.naming.resource_group.name_unique
-  type     = "Microsoft.Resources/resourceGroups@2024-03-01"
+  location                  = "australiaeast"
+  name                      = module.naming.resource_group.name_unique
+  type                      = "Microsoft.Resources/resourceGroups@2024-03-01"
+  response_export_values    = []
 }
 
 # A user assigned managed identity for the Managed Instance plan default identity
 resource "azapi_resource" "managed_identity" {
-  location  = azapi_resource.resource_group.location
-  name      = module.naming.user_assigned_identity.name_unique
-  parent_id = azapi_resource.resource_group.id
-  type      = "Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31"
+  location                  = azapi_resource.resource_group.location
+  name                      = module.naming.user_assigned_identity.name_unique
+  parent_id                 = azapi_resource.resource_group.id
+  type                      = "Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31"
+  response_export_values    = ["properties.principalId"]
 }
 
 # Storage account to host the install scripts package
@@ -55,7 +66,7 @@ resource "azapi_resource" "storage_account" {
     properties = {
       accessTier               = "Hot"
       allowBlobPublicAccess    = false
-      allowSharedKeyAccess     = true
+      allowSharedKeyAccess     = false
       minimumTlsVersion        = "TLS1_2"
       supportsHttpsTrafficOnly = true
       publicNetworkAccess      = "Enabled"
@@ -67,13 +78,15 @@ resource "azapi_resource" "storage_account" {
       name = "Standard_ZRS"
     }
   }
+  response_export_values = []
 }
 
 # Blob container to hold scripts.zip
 resource "azapi_resource" "blob_container" {
-  name      = "scripts"
-  parent_id = "${azapi_resource.storage_account.id}/blobServices/default"
-  type      = "Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01"
+  name                      = "scripts"
+  parent_id                 = "${azapi_resource.storage_account.id}/blobServices/default"
+  type                      = "Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01"
+  response_export_values    = []
   body = {
     properties = {
       publicAccess = "None"
@@ -84,9 +97,10 @@ resource "azapi_resource" "blob_container" {
 # Grant the managed identity "Storage Blob Data Reader" on the storage account
 # so the plan can pull install scripts
 resource "azapi_resource" "role_assignment_blob_reader" {
-  name      = "7d2b4b60-b4a1-4e5e-a123-abcdef012345"
-  parent_id = azapi_resource.storage_account.id
-  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
+  name                      = "7d2b4b60-b4a1-4e5e-a123-abcdef012345"
+  parent_id                 = azapi_resource.storage_account.id
+  type                      = "Microsoft.Authorization/roleAssignments@2022-04-01"
+  response_export_values    = []
   body = {
     properties = {
       principalId      = azapi_resource.managed_identity.output.properties.principalId
@@ -102,14 +116,32 @@ data "azapi_client_config" "this" {}
 
 # Upload scripts.zip as a placeholder for the install script package.
 # Replace the source with your own scripts.zip file.
-resource "terraform_data" "scripts_zip_upload" {
-  input = "${path.module}/scripts.zip"
+resource "azurerm_storage_blob" "scripts_zip" {
+  name                   = "scripts.zip"
+  storage_account_name   = azapi_resource.storage_account.name
+  storage_container_name = azapi_resource.blob_container.name
+  type                   = "Block"
+  source                 = "${path.module}/scripts.zip"
 
-  provisioner "local-exec" {
-    command = "az storage blob upload --account-name ${azapi_resource.storage_account.name} --container-name ${azapi_resource.blob_container.name} --name scripts.zip --file \"${path.module}/scripts.zip\" --auth-mode login --overwrite"
+  depends_on = [azapi_resource.role_assignment_blob_reader, azapi_resource.role_assignment_blob_contributor_current_user]
+}
+
+# Grant the current user "Storage Blob Data Contributor" on the storage account
+# so the azurerm provider can upload the blob via Azure AD auth
+resource "azapi_resource" "role_assignment_blob_contributor_current_user" {
+  name                      = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  parent_id                 = azapi_resource.storage_account.id
+  type                      = "Microsoft.Authorization/roleAssignments@2022-04-01"
+  response_export_values    = []
+  body = {
+    properties = {
+      principalId      = data.azapi_client_config.this.object_id
+      principalType    = "User"
+      roleDefinitionId = "/subscriptions/${data.azapi_client_config.this.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe"
+    }
   }
 
-  depends_on = [azapi_resource.role_assignment_blob_reader]
+  depends_on = [azapi_resource.blob_container]
 }
 
 # This is the module call
@@ -141,6 +173,8 @@ module "test" {
     identity_type                      = "UserAssigned"
     user_assigned_identity_resource_id = azapi_resource.managed_identity.id
   }
-  sku_name     = "P1v3"
-  worker_count = 1
+  sku_name     = "P1v4"
+  worker_count = 3
+
+  depends_on = [azurerm_storage_blob.scripts_zip]
 }
