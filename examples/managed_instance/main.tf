@@ -6,10 +6,6 @@ terraform {
       source  = "Azure/azapi"
       version = "~> 2.4"
     }
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
-    }
     random = {
       source  = "hashicorp/random"
       version = ">= 3.5.0, < 4.0.0"
@@ -18,10 +14,6 @@ terraform {
 }
 
 provider "azapi" {}
-
-provider "azurerm" {
-  features {}
-}
 
 resource "random_integer" "region_index" {
   max = length(local.test_regions) - 1
@@ -108,14 +100,14 @@ resource "azapi_resource" "role_assignment_blob_reader" {
 
 data "azapi_client_config" "this" {}
 
-# Upload an empty scripts.zip as a placeholder for the install script package.
+# Upload scripts.zip as a placeholder for the install script package.
 # Replace the source with your own scripts.zip file.
-resource "azurerm_storage_blob" "scripts_zip" {
-  name                   = "scripts.zip"
-  storage_account_name   = azapi_resource.storage_account.name
-  storage_container_name = azapi_resource.blob_container.name
-  type                   = "Block"
-  source                 = "${path.module}/scripts.zip"
+resource "terraform_data" "scripts_zip_upload" {
+  input = "${path.module}/scripts.zip"
+
+  provisioner "local-exec" {
+    command = "az storage blob upload --account-name ${azapi_resource.storage_account.name} --container-name ${azapi_resource.blob_container.name} --name scripts.zip --file \"${path.module}/scripts.zip\" --auth-mode login --overwrite"
+  }
 
   depends_on = [azapi_resource.role_assignment_blob_reader]
 }
