@@ -236,7 +236,9 @@ resource "azapi_resource" "key_vault" {
   type      = "Microsoft.KeyVault/vaults@2023-07-01"
   body = {
     properties = {
+      enablePurgeProtection        = false
       enableRbacAuthorization      = true
+      enableSoftDelete             = false
       enabledForDeployment         = false
       enabledForTemplateDeployment = false
       sku = {
@@ -288,46 +290,28 @@ data "azapi_resource_action" "storage_account_keys" {
 }
 
 # Store the storage account key in Key Vault as a secret
-resource "azapi_resource" "kv_secret_storage_key" {
-  name      = "storage-account-key"
-  parent_id = azapi_resource.key_vault.id
-  type      = "Microsoft.KeyVault/vaults/secrets@2023-07-01"
-  body = {
-    properties = {
-      value = data.azapi_resource_action.storage_account_keys.output.keys[0].value
-    }
-  }
-  response_export_values = ["properties.secretUri"]
+resource "azurerm_key_vault_secret" "storage_key" {
+  key_vault_id = azapi_resource.key_vault.id
+  name         = "storage-account-key"
+  value        = data.azapi_resource_action.storage_account_keys.output.keys[0].value
 
   depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
 }
 
 # Key Vault secret for a registry adapter string value
-resource "azapi_resource" "kv_secret_registry_string" {
-  name      = "registry-string-value"
-  parent_id = azapi_resource.key_vault.id
-  type      = "Microsoft.KeyVault/vaults/secrets@2023-07-01"
-  body = {
-    properties = {
-      value = "MyExampleStringValue"
-    }
-  }
-  response_export_values = ["properties.secretUri"]
+resource "azurerm_key_vault_secret" "registry_string" {
+  key_vault_id = azapi_resource.key_vault.id
+  name         = "registry-string-value"
+  value        = "MyExampleStringValue"
 
   depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
 }
 
 # Key Vault secret for a registry adapter binary value (base64 encoded)
-resource "azapi_resource" "kv_secret_registry_binary" {
-  name      = "registry-binary-value"
-  parent_id = azapi_resource.key_vault.id
-  type      = "Microsoft.KeyVault/vaults/secrets@2023-07-01"
-  body = {
-    properties = {
-      value = base64encode("BinaryData")
-    }
-  }
-  response_export_values = ["properties.secretUri"]
+resource "azurerm_key_vault_secret" "registry_binary" {
+  key_vault_id = azapi_resource.key_vault.id
+  name         = "registry-binary-value"
+  value        = base64encode("BinaryData")
 
   depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
 }
@@ -398,14 +382,14 @@ module "test" {
       registry_key = "HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/Config" # Registry key must start with HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, or HKEY_USERS and contain at least one forward slash.
       type         = "String"
       key_vault_secret_reference = {
-        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net/secrets/${azapi_resource.kv_secret_registry_string.name}"
+        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net/secrets/${azurerm_key_vault_secret.registry_string.name}"
       }
     },
     {
       registry_key = "HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/BinaryData" # Registry key must start with HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, or HKEY_USERS and contain at least one forward slash.
       type         = "Binary"
       key_vault_secret_reference = {
-        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net/secrets/${azapi_resource.kv_secret_registry_binary.name}"
+        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net/secrets/${azurerm_key_vault_secret.registry_binary.name}"
       }
     }
   ]
@@ -423,7 +407,7 @@ module "test" {
       source           = "\\\\${azapi_resource.storage_account.name}.file.core.windows.net\\${azapi_resource.file_share.name}"
       destination_path = "H:\\"
       credentials_key_vault_reference = {
-        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net//secrets/${azapi_resource.kv_secret_storage_key.name}" # NOTE: the double slash after the vault URI is intentional to comply with Key Vault secret URI format for this resource
+        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net//secrets/${azurerm_key_vault_secret.storage_key.name}" # NOTE: the double slash after the vault URI is intentional to comply with Key Vault secret URI format for this resource
       }
     }
   ]

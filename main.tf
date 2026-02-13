@@ -30,7 +30,7 @@ resource "azapi_resource" "this" {
       hostingEnvironmentProfile = var.app_service_environment_id != null ? { id = var.app_service_environment_id } : null
       hyperV                    = var.os_type == "WindowsContainer"
       maximumElasticWorkerCount = local.maximum_elastic_worker_count
-      installScripts = var.install_scripts != null ? [
+      installScripts = var.os_type == "WindowsManagedInstance" && var.install_scripts != null ? [
         for script in var.install_scripts : {
           name = script.name
           source = {
@@ -44,7 +44,7 @@ resource "azapi_resource" "this" {
       } : null
       perSiteScaling = var.per_site_scaling_enabled
       rdpEnabled     = var.os_type == "WindowsManagedInstance" ? var.rdp_enabled : null
-      storageMounts = var.storage_mounts != null ? [
+      storageMounts = var.os_type == "WindowsManagedInstance" && var.storage_mounts != null ? [
         for mount in var.storage_mounts : {
           name            = mount.name
           type            = mount.type
@@ -55,11 +55,11 @@ resource "azapi_resource" "this" {
           }
         }
       ] : null
-      planDefaultIdentity = var.plan_default_identity != null ? {
+      planDefaultIdentity = var.os_type == "WindowsManagedInstance" && var.plan_default_identity != null ? {
         identityType                   = var.plan_default_identity.identity_type
         userAssignedIdentityResourceId = var.plan_default_identity.user_assigned_identity_resource_id
       } : null
-      registryAdapters = var.registry_adapters != null ? [
+      registryAdapters = var.os_type == "WindowsManagedInstance" && var.registry_adapters != null ? [
         for adapter in var.registry_adapters : {
           registryKey = adapter.registry_key
           type        = adapter.type
