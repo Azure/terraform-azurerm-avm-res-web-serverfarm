@@ -236,6 +236,37 @@ Type: `bool`
 
 Default: `false`
 
+### <a name="input_rdp_enabled"></a> [rdp\_enabled](#input\_rdp\_enabled)
+
+Description: Optional: Whether RDP is enabled for the Managed Instance App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`. Set to `null` for non-managed instance plans. A Bastion host with must be deployed in the virtual network for RDP connectivity to work.
+
+Type: `bool`
+
+Default: `null`
+
+### <a name="input_registry_adapters"></a> [registry\_adapters](#input\_registry\_adapters)
+
+Description:   Optional: A list of registry adapters associated with this App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
+
+  - `registry_key` - (Required) Registry key for the adapter. The registry key must start with `HKEY_LOCAL_MACHINE`, `HKEY_CURRENT_USER`, or `HKEY_USERS` and contain at least one forward slash (e.g. `HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/Config`).
+  - `type` - (Required) Type of the registry adapter. Possible values are `"Binary"`, `"DWord"`, `"Expand_String"`, `"Multi_String"`, `"QWord"`, and `"String"`.
+  - `key_vault_secret_reference` - (Required) Key vault reference to the value that will be placed in the registry location.
+    - `secret_uri` - (Required) The URI of the Key Vault secret.
+
+Type:
+
+```hcl
+list(object({
+    registry_key = string
+    type         = string
+    key_vault_secret_reference = object({
+      secret_uri = string
+    })
+  }))
+```
+
+Default: `null`
+
 ### <a name="input_retry"></a> [retry](#input\_retry)
 
 Description:   The retry configuration for azapi resources. The following properties can be specified:
@@ -296,6 +327,33 @@ Type: `string`
 
 Default: `"P1v2"`
 
+### <a name="input_storage_mounts"></a> [storage\_mounts](#input\_storage\_mounts)
+
+Description:   Optional: A list of storage mounts to configure on the App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
+
+  - `name` - (Required) The name of the storage mount (e.g. `"g-drive"`).
+  - `type` - (Optional) The type of the storage mount. Defaults to `"LocalStorage"`.
+  - `source` - (Optional) The source of the storage mount. Defaults to `""`.
+  - `destination_path` - (Required) The destination path for the storage mount (e.g. `"G:\\"`).
+  - `credentials_key_vault_reference` - (Optional) A Key Vault reference for storage credentials.
+    - `secret_uri` - (Required) The URI of the Key Vault secret.
+
+Type:
+
+```hcl
+list(object({
+    name             = string
+    type             = optional(string, "LocalStorage")
+    source           = optional(string, "")
+    destination_path = string
+    credentials_key_vault_reference = optional(object({
+      secret_uri = optional(string)
+    }), {})
+  }))
+```
+
+Default: `null`
+
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
 Description: Tags of the resource.
@@ -323,6 +381,14 @@ object({
     update = optional(string, null)
   })
 ```
+
+Default: `null`
+
+### <a name="input_virtual_network_subnet_id"></a> [virtual\_network\_subnet\_id](#input\_virtual\_network\_subnet\_id)
+
+Description: Optional: The resource ID of the subnet to integrate the App Service Plan with. This enables VNet integration for the plan.
+
+Type: `string`
 
 Default: `null`
 

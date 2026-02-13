@@ -191,6 +191,38 @@ variable "premium_plan_auto_scale_enabled" {
   description = "Defaults to false. Should elastic scale be enabled for this App Service Plan. Only set to true if deploying a Premium or Elastic Premium SKU."
 }
 
+variable "rdp_enabled" {
+  type        = bool
+  default     = null
+  description = "Optional: Whether RDP is enabled for the Managed Instance App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`. Set to `null` for non-managed instance plans. A Bastion host with must be deployed in the virtual network for RDP connectivity to work."
+}
+
+variable "registry_adapters" {
+  type = list(object({
+    registry_key = string
+    type         = string
+    key_vault_secret_reference = object({
+      secret_uri = string
+    })
+  }))
+  default     = null
+  description = <<DESCRIPTION
+  Optional: A list of registry adapters associated with this App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
+
+  - `registry_key` - (Required) Registry key for the adapter. The registry key must start with `HKEY_LOCAL_MACHINE`, `HKEY_CURRENT_USER`, or `HKEY_USERS` and contain at least one forward slash (e.g. `HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/Config`).
+  - `type` - (Required) Type of the registry adapter. Possible values are `"Binary"`, `"DWord"`, `"Expand_String"`, `"Multi_String"`, `"QWord"`, and `"String"`.
+  - `key_vault_secret_reference` - (Required) Key vault reference to the value that will be placed in the registry location.
+    - `secret_uri` - (Required) The URI of the Key Vault secret.
+  DESCRIPTION
+
+  validation {
+    condition = var.registry_adapters != null ? alltrue([
+      for adapter in var.registry_adapters : contains(["Binary", "DWord", "Expand_String", "Multi_String", "QWord", "String"], adapter.type)
+    ]) : true
+    error_message = "The registry adapter type must be one of: `Binary`, `DWord`, `Expand_String`, `Multi_String`, `QWord`, or `String`."
+  }
+}
+
 variable "retry" {
   type = object({
     error_message_regex  = optional(list(string), ["ScopeLocked"])
@@ -247,6 +279,29 @@ variable "sku_name" {
   }
 }
 
+variable "storage_mounts" {
+  type = list(object({
+    name             = string
+    type             = optional(string, "LocalStorage")
+    source           = optional(string, "")
+    destination_path = string
+    credentials_key_vault_reference = optional(object({
+      secret_uri = optional(string)
+    }), {})
+  }))
+  default     = null
+  description = <<DESCRIPTION
+  Optional: A list of storage mounts to configure on the App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
+
+  - `name` - (Required) The name of the storage mount (e.g. `"g-drive"`).
+  - `type` - (Optional) The type of the storage mount. Defaults to `"LocalStorage"`.
+  - `source` - (Optional) The source of the storage mount. Defaults to `""`.
+  - `destination_path` - (Required) The destination path for the storage mount (e.g. `"G:\\"`).
+  - `credentials_key_vault_reference` - (Optional) A Key Vault reference for storage credentials.
+    - `secret_uri` - (Required) The URI of the Key Vault secret.
+  DESCRIPTION
+}
+
 variable "tags" {
   type        = map(string)
   default     = null
@@ -269,6 +324,12 @@ variable "timeouts" {
   - `read` - (Optional) The timeout for read operations e.g. `"30m"`, `"1h"`.
   - `update` - (Optional) The timeout for update operations e.g. `"30m"`, `"1h"`.
   DESCRIPTION
+}
+
+variable "virtual_network_subnet_id" {
+  type        = string
+  default     = null
+  description = "Optional: The resource ID of the subnet to integrate the App Service Plan with. This enables VNet integration for the plan."
 }
 
 variable "worker_count" {

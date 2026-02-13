@@ -44,6 +44,9 @@ resource "azapi_resource" "resource_group" {
   name                   = module.naming.resource_group.name_unique
   type                   = "Microsoft.Resources/resourceGroups@2024-03-01"
   response_export_values = []
+  tags = {
+    SecurityControl = "Ignore" # Useful for test environments
+  }
 }
 
 # A user assigned managed identity for the Managed Instance plan default identity
@@ -66,7 +69,7 @@ resource "azapi_resource" "storage_account" {
     properties = {
       accessTier               = "Hot"
       allowBlobPublicAccess    = false
-      allowSharedKeyAccess     = false
+      allowSharedKeyAccess     = true
       minimumTlsVersion        = "TLS1_2"
       supportsHttpsTrafficOnly = true
       publicNetworkAccess      = "Enabled"
@@ -114,6 +117,221 @@ resource "azapi_resource" "role_assignment_blob_reader" {
 
 data "azapi_client_config" "this" {}
 
+# Virtual network for the Managed Instance App Service Plan
+resource "azapi_resource" "virtual_network" {
+  location  = azapi_resource.resource_group.location
+  name      = module.naming.virtual_network.name_unique
+  parent_id = azapi_resource.resource_group.id
+  type      = "Microsoft.Network/virtualNetworks@2024-05-01"
+  body = {
+    properties = {
+      addressSpace = {
+        addressPrefixes = ["10.0.0.0/16"]
+      }
+    }
+  }
+  response_export_values = []
+}
+
+# Subnet for the App Service Plan delegation
+resource "azapi_resource" "subnet" {
+  name      = "default"
+  parent_id = azapi_resource.virtual_network.id
+  type      = "Microsoft.Network/virtualNetworks/subnets@2024-05-01"
+  body = {
+    properties = {
+      addressPrefix = "10.0.0.0/24"
+      delegations = [
+        {
+          name = "Microsoft.Web.serverFarms"
+          properties = {
+            serviceName = "Microsoft.Web/serverFarms"
+          }
+        }
+      ]
+    }
+  }
+  response_export_values = []
+}
+
+# Subnet for Azure Bastion
+resource "azapi_resource" "bastion_subnet" {
+  name      = "AzureBastionSubnet"
+  parent_id = azapi_resource.virtual_network.id
+  type      = "Microsoft.Network/virtualNetworks/subnets@2024-05-01"
+  body = {
+    properties = {
+      addressPrefix = "10.0.1.0/26"
+    }
+  }
+  response_export_values = []
+
+  depends_on = [azapi_resource.subnet]
+}
+
+# Public IP for Azure Bastion
+resource "azapi_resource" "bastion_public_ip" {
+  location  = azapi_resource.resource_group.location
+  name      = "${module.naming.public_ip.name_unique}-bastion"
+  parent_id = azapi_resource.resource_group.id
+  type      = "Microsoft.Network/publicIPAddresses@2024-05-01"
+  body = {
+    properties = {
+      publicIPAllocationMethod = "Static"
+    }
+    sku = {
+      name = "Standard"
+    }
+  }
+  response_export_values = []
+}
+
+# Azure Bastion Host with Standard SKU
+resource "azapi_resource" "bastion_host" {
+  location  = azapi_resource.resource_group.location
+  name      = module.naming.bastion_host.name_unique
+  parent_id = azapi_resource.resource_group.id
+  type      = "Microsoft.Network/bastionHosts@2024-05-01"
+  body = {
+    properties = {
+      ipConfigurations = [
+        {
+          name = "bastion-ip-config"
+          properties = {
+            publicIPAddress = {
+              id = azapi_resource.bastion_public_ip.id
+            }
+            subnet = {
+              id = azapi_resource.bastion_subnet.id
+            }
+          }
+        }
+      ]
+    }
+    sku = {
+      name = "Standard"
+    }
+  }
+  response_export_values = []
+}
+
+# File share for H: drive mount
+resource "azapi_resource" "file_share" {
+  name      = "hshare"
+  parent_id = "${azapi_resource.storage_account.id}/fileServices/default"
+  type      = "Microsoft.Storage/storageAccounts/fileServices/shares@2023-05-01"
+  body = {
+    properties = {
+      shareQuota = 5
+    }
+  }
+  response_export_values = []
+}
+
+# Key Vault for storing the storage account key
+resource "azapi_resource" "key_vault" {
+  location  = azapi_resource.resource_group.location
+  name      = module.naming.key_vault.name_unique
+  parent_id = azapi_resource.resource_group.id
+  type      = "Microsoft.KeyVault/vaults@2023-07-01"
+  body = {
+    properties = {
+      enableRbacAuthorization      = true
+      enabledForDeployment         = false
+      enabledForTemplateDeployment = false
+      sku = {
+        family = "A"
+        name   = "standard"
+      }
+      tenantId = data.azapi_client_config.this.tenant_id
+    }
+  }
+  response_export_values = []
+}
+
+# Grant the current user "Key Vault Secrets Officer" so we can create the secret
+resource "azapi_resource" "role_assignment_kv_secrets_officer" {
+  name      = "b1c2d3e4-f5a6-7890-abcd-ef1234567891"
+  parent_id = azapi_resource.key_vault.id
+  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
+  body = {
+    properties = {
+      principalId      = data.azapi_client_config.this.object_id
+      roleDefinitionId = "/subscriptions/${data.azapi_client_config.this.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/b86a8fe4-44ce-4948-aee5-eccb2c155cd7"
+    }
+  }
+  response_export_values = []
+}
+
+# Grant the managed identity "Key Vault Secrets User" on the Key Vault
+# so the App Service Plan can read secrets for registry adapters and storage mount credentials
+resource "azapi_resource" "role_assignment_kv_secrets_user" {
+  name      = "c2d3e4f5-a6b7-8901-bcde-f12345678902"
+  parent_id = azapi_resource.key_vault.id
+  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
+  body = {
+    properties = {
+      principalId      = azapi_resource.managed_identity.output.properties.principalId
+      principalType    = "ServicePrincipal"
+      roleDefinitionId = "/subscriptions/${data.azapi_client_config.this.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6"
+    }
+  }
+  response_export_values = []
+}
+
+# Retrieve the storage account keys
+data "azapi_resource_action" "storage_account_keys" {
+  action                 = "listKeys"
+  resource_id            = azapi_resource.storage_account.id
+  type                   = "Microsoft.Storage/storageAccounts@2023-05-01"
+  response_export_values = ["keys"]
+}
+
+# Store the storage account key in Key Vault as a secret
+resource "azapi_resource" "kv_secret_storage_key" {
+  name      = "storage-account-key"
+  parent_id = azapi_resource.key_vault.id
+  type      = "Microsoft.KeyVault/vaults/secrets@2023-07-01"
+  body = {
+    properties = {
+      value = data.azapi_resource_action.storage_account_keys.output.keys[0].value
+    }
+  }
+  response_export_values = ["properties.secretUri"]
+
+  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+}
+
+# Key Vault secret for a registry adapter string value
+resource "azapi_resource" "kv_secret_registry_string" {
+  name      = "registry-string-value"
+  parent_id = azapi_resource.key_vault.id
+  type      = "Microsoft.KeyVault/vaults/secrets@2023-07-01"
+  body = {
+    properties = {
+      value = "MyExampleStringValue"
+    }
+  }
+  response_export_values = ["properties.secretUri"]
+
+  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+}
+
+# Key Vault secret for a registry adapter binary value (base64 encoded)
+resource "azapi_resource" "kv_secret_registry_binary" {
+  name      = "registry-binary-value"
+  parent_id = azapi_resource.key_vault.id
+  type      = "Microsoft.KeyVault/vaults/secrets@2023-07-01"
+  body = {
+    properties = {
+      value = base64encode("BinaryData")
+    }
+  }
+  response_export_values = ["properties.secretUri"]
+
+  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+}
+
 # Upload scripts.zip as a placeholder for the install script package.
 # Replace the source with your own scripts.zip file.
 resource "azurerm_storage_blob" "scripts_zip" {
@@ -134,8 +352,8 @@ resource "azapi_resource" "role_assignment_blob_contributor_current_user" {
   type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
   body = {
     properties = {
-      principalId      = data.azapi_client_config.this.object_id
-      principalType    = "User"
+      principalId = data.azapi_client_config.this.object_id
+      #principalType    = "User"
       roleDefinitionId = "/subscriptions/${data.azapi_client_config.this.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe"
     }
   }
@@ -173,8 +391,44 @@ module "test" {
     identity_type                      = "UserAssigned"
     user_assigned_identity_resource_id = azapi_resource.managed_identity.id
   }
-  sku_name     = "P1v4"
-  worker_count = 3
+  rdp_enabled = true
+  # Registry adapters - configure Windows registry keys via Key Vault references
+  registry_adapters = [
+    {
+      registry_key = "HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/Config" # Registry key must start with HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, or HKEY_USERS and contain at least one forward slash.
+      type         = "String"
+      key_vault_secret_reference = {
+        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net/secrets/${azapi_resource.kv_secret_registry_string.name}"
+      }
+    },
+    {
+      registry_key = "HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/BinaryData" # Registry key must start with HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, or HKEY_USERS and contain at least one forward slash.
+      type         = "Binary"
+      key_vault_secret_reference = {
+        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net/secrets/${azapi_resource.kv_secret_registry_binary.name}"
+      }
+    }
+  ]
+  sku_name = "P1v4" # V4 skus are required for Windows Managed Instance
+  # Storage mount for G: drive
+  storage_mounts = [
+    {
+      name             = "g-drive"
+      type             = "LocalStorage"
+      destination_path = "G:\\"
+    },
+    {
+      name             = "h-drive"
+      type             = "AzureFiles"
+      source           = "\\\\${azapi_resource.storage_account.name}.file.core.windows.net\\${azapi_resource.file_share.name}"
+      destination_path = "H:\\"
+      credentials_key_vault_reference = {
+        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net//secrets/${azapi_resource.kv_secret_storage_key.name}" # NOTE: the double slash after the vault URI is intentional to comply with Key Vault secret URI format for this resource
+      }
+    }
+  ]
+  virtual_network_subnet_id = azapi_resource.subnet.id
+  worker_count              = 3
 
   depends_on = [azurerm_storage_blob.scripts_zip]
 }

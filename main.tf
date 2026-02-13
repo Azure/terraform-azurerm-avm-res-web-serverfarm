@@ -39,11 +39,35 @@ resource "azapi_resource" "this" {
           }
         }
       ] : null
+      network = var.virtual_network_subnet_id != null ? {
+        virtualNetworkSubnetId = var.virtual_network_subnet_id
+      } : null
       perSiteScaling = var.per_site_scaling_enabled
+      rdpEnabled     = var.os_type == "WindowsManagedInstance" ? var.rdp_enabled : null
+      storageMounts = var.storage_mounts != null ? [
+        for mount in var.storage_mounts : {
+          name            = mount.name
+          type            = mount.type
+          source          = mount.source
+          destinationPath = mount.destination_path
+          credentialsKeyVaultReference = {
+            secretUri = mount.credentials_key_vault_reference.secret_uri
+          }
+        }
+      ] : null
       planDefaultIdentity = var.plan_default_identity != null ? {
         identityType                   = var.plan_default_identity.identity_type
         userAssignedIdentityResourceId = var.plan_default_identity.user_assigned_identity_resource_id
       } : null
+      registryAdapters = var.registry_adapters != null ? [
+        for adapter in var.registry_adapters : {
+          registryKey = adapter.registry_key
+          type        = adapter.type
+          keyVaultSecretReference = {
+            secretUri = adapter.key_vault_secret_reference.secret_uri
+          }
+        }
+      ] : null
       spotExpirationTime = null
       reserved           = var.os_type == "Linux"
       targetWorkerCount  = null
