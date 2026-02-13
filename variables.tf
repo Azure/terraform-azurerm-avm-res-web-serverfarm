@@ -210,16 +210,16 @@ variable "registry_adapters" {
   Optional: A list of registry adapters associated with this App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
 
   - `registry_key` - (Required) Registry key for the adapter. The registry key must start with `HKEY_LOCAL_MACHINE`, `HKEY_CURRENT_USER`, or `HKEY_USERS` and contain at least one forward slash (e.g. `HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/Config`).
-  - `type` - (Required) Type of the registry adapter. Possible values are `"Binary"`, `"DWord"`, `"Expand_String"`, `"Multi_String"`, `"QWord"`, and `"String"`.
+  - `type` - (Required) Type of the registry adapter. Possible values are `"DWORD"` or`"String"`.
   - `key_vault_secret_reference` - (Required) Key vault reference to the value that will be placed in the registry location.
     - `secret_uri` - (Required) The URI of the Key Vault secret.
   DESCRIPTION
 
   validation {
     condition = var.registry_adapters != null ? alltrue([
-      for adapter in var.registry_adapters : contains(["Binary", "DWord", "Expand_String", "Multi_String", "QWord", "String"], adapter.type)
+      for adapter in var.registry_adapters : contains(["DWORD", "String"], adapter.type)
     ]) : true
-    error_message = "The registry adapter type must be one of: `Binary`, `DWord`, `Expand_String`, `Multi_String`, `QWord`, or `String`."
+    error_message = "The registry adapter type must be one of: `DWORD` or `String`."
   }
 }
 

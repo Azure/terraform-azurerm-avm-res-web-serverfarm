@@ -20,7 +20,13 @@ terraform {
 provider "azapi" {}
 
 provider "azurerm" {
-  features {}
+  features {
+    key_vault {
+      purge_soft_delete_on_destroy          = false
+      purge_soft_deleted_keys_on_destroy    = false
+      purge_soft_deleted_secrets_on_destroy = false
+    }
+  }
   storage_use_azuread = true
 }
 
@@ -178,10 +184,12 @@ resource "azapi_resource" "bastion_public_ip" {
   body = {
     properties = {
       publicIPAllocationMethod = "Static"
+      publicIPAddressVersion   = "IPv4"
     }
     sku = {
       name = "Standard"
     }
+    zones = ["1", "2", "3"]
   }
   response_export_values = []
 }
@@ -207,12 +215,19 @@ resource "azapi_resource" "bastion_host" {
           }
         }
       ]
+      scaleUnits = 2
     }
     sku = {
       name = "Standard"
     }
+    zones = ["1", "2", "3"]
   }
   response_export_values = []
+
+  timeouts {
+    create = "60m"
+    delete = "60m"
+  }
 }
 
 # File share for H: drive mount
@@ -236,7 +251,7 @@ resource "azapi_resource" "key_vault" {
   type      = "Microsoft.KeyVault/vaults@2023-07-01"
   body = {
     properties = {
-      enablePurgeProtection        = false
+      enablePurgeProtection        = null
       enableRbacAuthorization      = true
       enableSoftDelete             = false
       enabledForDeployment         = false
@@ -289,11 +304,11 @@ data "azapi_resource_action" "storage_account_keys" {
   response_export_values = ["keys"]
 }
 
-# Store the storage account key in Key Vault as a secret
+# Store the storage account connection string in Key Vault as a secret
 resource "azurerm_key_vault_secret" "storage_key" {
   key_vault_id = azapi_resource.key_vault.id
   name         = "storage-account-key"
-  value        = data.azapi_resource_action.storage_account_keys.output.keys[0].value
+  value        = "DefaultEndpointsProtocol=https;AccountName=${azapi_resource.storage_account.name};AccountKey=${data.azapi_resource_action.storage_account_keys.output.keys[0].value};EndpointSuffix=core.windows.net"
 
   depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
 }
@@ -307,11 +322,11 @@ resource "azurerm_key_vault_secret" "registry_string" {
   depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
 }
 
-# Key Vault secret for a registry adapter binary value (base64 encoded)
-resource "azurerm_key_vault_secret" "registry_binary" {
+# Key Vault secret for a registry adapter DWORD value
+resource "azurerm_key_vault_secret" "registry_dword" {
   key_vault_id = azapi_resource.key_vault.id
-  name         = "registry-binary-value"
-  value        = base64encode("BinaryData")
+  name         = "registry-dword-value"
+  value        = "23FE" # Hexadecimal string for DWORD value of 35
 
   depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
 }
@@ -386,10 +401,10 @@ module "test" {
       }
     },
     {
-      registry_key = "HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/BinaryData" # Registry key must start with HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, or HKEY_USERS and contain at least one forward slash.
-      type         = "Binary"
+      registry_key = "HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/DWordData" # Registry key must start with HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, or HKEY_USERS and contain at least one forward slash.
+      type         = "DWORD"
       key_vault_secret_reference = {
-        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net/secrets/${azurerm_key_vault_secret.registry_binary.name}"
+        secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net/secrets/${azurerm_key_vault_secret.registry_dword.name}"
       }
     }
   ]
@@ -415,4 +430,29 @@ module "test" {
   worker_count              = 3
 
   depends_on = [azurerm_storage_blob.scripts_zip]
+}
+
+# Web App running .NET 10 on Windows, hosted on the Managed Instance plan
+resource "azapi_resource" "web_app" {
+  location  = azapi_resource.resource_group.location
+  name      = module.naming.app_service.name_unique
+  parent_id = azapi_resource.resource_group.id
+  type      = "Microsoft.Web/sites@2024-04-01"
+  body = {
+    kind = "app"
+    properties = {
+      serverFarmId = module.test.resource_id
+      siteConfig = {
+        netFrameworkVersion = "v10.0"
+        metadata = [
+          {
+            name  = "CURRENT_STACK"
+            value = "dotnet"
+          }
+        ]
+      }
+    }
+  }
+  response_export_values    = []
+  schema_validation_enabled = false
 }
