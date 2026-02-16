@@ -37,18 +37,13 @@ resource "azapi_resource" "resource_group" {
   response_export_values = []
 }
 
-moved {
-  from = azurerm_resource_group.this
-  to   = azapi_resource.resource_group
-}
-
 # This is the module call
 module "test" {
   source = "../.."
 
   location         = azapi_resource.resource_group.location
   name             = module.naming.app_service_plan.name_unique
-  os_type          = "Windows"
+  os_type          = "Linux"
   parent_id        = azapi_resource.resource_group.id
   enable_telemetry = var.enable_telemetry
 }

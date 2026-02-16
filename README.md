@@ -18,8 +18,6 @@ The following requirements are needed by this module:
 
 - <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.4)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 4.19.0, < 5.0.0)
-
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
@@ -28,13 +26,14 @@ The following requirements are needed by this module:
 
 The following resources are used by this module:
 
-- [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
-- [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
-- [azurerm_service_plan.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/service_plan) (resource)
+- [azapi_resource.diagnostic_setting](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource.lock](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource.role_assignment](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 - [modtm_telemetry.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/resources/telemetry) (resource)
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
 - [azapi_client_config.telemetry](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
-- [azurerm_location.region](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/location) (data source)
+- [azapi_client_config.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
 - [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
 <!-- markdownlint-disable MD013 -->
@@ -60,9 +59,9 @@ Description: The operating system type of the service plan. Possible values are 
 
 Type: `string`
 
-### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
+### <a name="input_parent_id"></a> [parent\_id](#input\_parent\_id)
 
-Description: The resource group where the resources will be deployed.
+Description: The resource ID of the resource group in which to create this resource.
 
 Type: `string`
 
@@ -78,6 +77,54 @@ Type: `string`
 
 Default: `null`
 
+### <a name="input_diagnostic_settings"></a> [diagnostic\_settings](#input\_diagnostic\_settings)
+
+Description:   A map of diagnostic settings to create on the App Service Environment (ASE). The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
+
+  - `name` - (Optional) The name of the diagnostic setting. One will be generated if not set, however this will not be unique if you want to create multiple diagnostic setting resources.
+  - `log_categories` - (Optional) A set of log categories to send to the log analytics workspace. Defaults to `[]`.
+  - `log_groups` - (Optional) A set of log groups to send to the log analytics workspace. Defaults to `["allLogs"]`.
+  - `metric_categories` - (Optional) A set of metric categories to send to the log analytics workspace. Defaults to `["AllMetrics"]`.
+  - `log_analytics_destination_type` - (Optional) The destination type for the diagnostic setting. Possible values are `Dedicated` and `AzureDiagnostics`. Defaults to `Dedicated`.
+  - `workspace_resource_id` - (Optional) The resource ID of the log analytics workspace to send logs and metrics to.
+  - `storage_account_resource_id` - (Optional) The resource ID of the storage account to send logs and metrics to.
+  - `event_hub_authorization_rule_resource_id` - (Optional) The resource ID of the event hub authorization rule to send logs and metrics to.
+  - `event_hub_name` - (Optional) The name of the event hub. If none is specified, the default event hub will be selected.
+  - `marketplace_partner_resource_id` - (Optional) The full ARM resource ID of the Marketplace resource to which you would like to send Diagnostic Logs.
+
+Type:
+
+```hcl
+map(object({
+    name = optional(string, null)
+    logs = optional(set(object({
+      category       = optional(string, null)
+      category_group = optional(string, null)
+      enabled        = optional(bool, true)
+      retention_policy = optional(object({
+        days    = optional(number, 0)
+        enabled = optional(bool, false)
+      }), {})
+    })), [])
+    metrics = optional(set(object({
+      category = optional(string, null)
+      enabled  = optional(bool, true)
+      retention_policy = optional(object({
+        days    = optional(number, 0)
+        enabled = optional(bool, false)
+      }), {})
+    })), [])
+    log_analytics_destination_type           = optional(string, "Dedicated")
+    workspace_resource_id                    = optional(string, null)
+    storage_account_resource_id              = optional(string, null)
+    event_hub_authorization_rule_resource_id = optional(string, null)
+    event_hub_name                           = optional(string, null)
+    marketplace_partner_resource_id          = optional(string, null)
+  }))
+```
+
+Default: `{}`
+
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
 Description: This variable controls whether or not telemetry is enabled for the module.  
@@ -87,6 +134,29 @@ If it is set to false, then no telemetry will be collected.
 Type: `bool`
 
 Default: `true`
+
+### <a name="input_install_scripts"></a> [install\_scripts](#input\_install\_scripts)
+
+Description:   Optional: A list of install scripts to run on the Managed Instance App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
+
+  - `name` - (Required) The name of the install script (e.g. `"FontInstaller"`).
+  - `source` - (Required) The source configuration for the install script.
+    - `type` - (Optional) The type of the source. Defaults to `"RemoteAzureBlob"`.
+    - `source_uri` - (Required) The URI of the install script package (e.g. a blob URI to a `.zip` file).
+
+Type:
+
+```hcl
+list(object({
+    name = string
+    source = object({
+      type       = optional(string, "RemoteAzureBlob")
+      source_uri = string
+    })
+  }))
+```
+
+Default: `null`
 
 ### <a name="input_lock"></a> [lock](#input\_lock)
 
@@ -106,13 +176,31 @@ object({
 
 Default: `null`
 
+### <a name="input_managed_identities"></a> [managed\_identities](#input\_managed\_identities)
+
+Description:   Controls the managed identity configuration on this resource. The following properties can be specified:
+
+  - `system_assigned` - (Optional) Specifies if the System Assigned Managed Identity should be enabled.
+  - `user_assigned_resource_ids` - (Optional) Specifies a list of User Assigned Managed Identity resource IDs to be assigned to this resource.
+
+Type:
+
+```hcl
+object({
+    system_assigned            = optional(bool, false)
+    user_assigned_resource_ids = optional(set(string), [])
+  })
+```
+
+Default: `{}`
+
 ### <a name="input_maximum_elastic_worker_count"></a> [maximum\_elastic\_worker\_count](#input\_maximum\_elastic\_worker\_count)
 
-Description: The minimum number of workers to allocate for this App Service Plan.
+Description: The maximum number of total workers allowed for this ElasticScaleEnabled App Service Plan.
 
 Type: `number`
 
-Default: `null`
+Default: `3`
 
 ### <a name="input_per_site_scaling_enabled"></a> [per\_site\_scaling\_enabled](#input\_per\_site\_scaling\_enabled)
 
@@ -122,22 +210,91 @@ Type: `bool`
 
 Default: `false`
 
+### <a name="input_plan_default_identity"></a> [plan\_default\_identity](#input\_plan\_default\_identity)
+
+Description:   Optional: The default identity configuration for the Managed Instance App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
+
+  - `identity_type` - (Optional) The type of the identity. Defaults to `"UserAssigned"`.
+  - `user_assigned_identity_resource_id` - (Required) The resource ID of the user-assigned managed identity to use as the plan default identity.
+
+Type:
+
+```hcl
+object({
+    identity_type                      = optional(string, "UserAssigned")
+    user_assigned_identity_resource_id = string
+  })
+```
+
+Default: `null`
+
 ### <a name="input_premium_plan_auto_scale_enabled"></a> [premium\_plan\_auto\_scale\_enabled](#input\_premium\_plan\_auto\_scale\_enabled)
 
-Description: Defaults to false. Should auto scaling be enabled for this App Service Plan. Only set to true if deploying a Premium SKU.
+Description: Defaults to false. Should elastic scale be enabled for this App Service Plan. Only set to true if deploying a Premium or Elastic Premium SKU.
 
 Type: `bool`
 
 Default: `false`
 
+### <a name="input_rdp_enabled"></a> [rdp\_enabled](#input\_rdp\_enabled)
+
+Description: Optional: Whether RDP is enabled for the Managed Instance App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`. Set to `null` for non-managed instance plans. A Bastion host with must be deployed in the virtual network for RDP connectivity to work.
+
+Type: `bool`
+
+Default: `null`
+
+### <a name="input_registry_adapters"></a> [registry\_adapters](#input\_registry\_adapters)
+
+Description:   Optional: A list of registry adapters associated with this App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
+
+  - `registry_key` - (Required) Registry key for the adapter. The registry key must start with `HKEY_LOCAL_MACHINE`, `HKEY_CURRENT_USER`, or `HKEY_USERS` and contain at least one forward slash (e.g. `HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/Config`).
+  - `type` - (Required) Type of the registry adapter. Possible values are `"DWORD"` or`"String"`.
+  - `key_vault_secret_reference` - (Required) Key vault reference to the value that will be placed in the registry location.
+    - `secret_uri` - (Required) The URI of the Key Vault secret.
+
+Type:
+
+```hcl
+list(object({
+    registry_key = string
+    type         = string
+    key_vault_secret_reference = object({
+      secret_uri = string
+    })
+  }))
+```
+
+Default: `null`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description:   The retry configuration for azapi resources. The following properties can be specified:
+
+  - `error_message_regex` - (Required) A list of regular expressions to match against error messages. If any match, the request will be retried.
+  - `interval_seconds` - (Optional) The base number of seconds to wait between retries. Default is `10`.
+  - `max_interval_seconds` - (Optional) The maximum number of seconds to wait between retries. Default is `180`.
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string), ["ScopeLocked"])
+    interval_seconds     = optional(number, null)
+    max_interval_seconds = optional(number, null)
+  })
+```
+
+Default: `null`
+
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
-Description:   A map of role assignments to create on the <RESOURCE>. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
+Description:   A map of role assignments to create on the resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
 
   - `role_definition_id_or_name` - The ID or name of the role definition to assign to the principal.
   - `principal_id` - The ID of the principal to assign the role to.
   - `description` - (Optional) The description of the role assignment.
-  - `skip_service_principal_aad_check` - (Optional) If set to true, skips the Azure Active Directory check for the service principal in the tenant. Defaults to false.
+  - `skip_service_principal_aad_check` - (Optional) No effect when using AzAPI. Defaults to false.
   - `condition` - (Optional) The condition which will be used to scope the role assignment.
   - `condition_version` - (Optional) The version of the condition syntax. Leave as `null` if you are not using a condition, if you are then valid values are `2.0`.
   - `delegated_managed_identity_resource_id` - (Optional) The delegated Azure Resource Id which contains a Managed Identity. Changing this forces a new resource to be created. This field is only used in cross-tenant scenario.
@@ -170,6 +327,33 @@ Type: `string`
 
 Default: `"P1v2"`
 
+### <a name="input_storage_mounts"></a> [storage\_mounts](#input\_storage\_mounts)
+
+Description:   Optional: A list of storage mounts to configure on the App Service Plan. Only applicable when `os_type` is `WindowsManagedInstance`.
+
+  - `name` - (Required) The name of the storage mount (e.g. `"g-drive"`).
+  - `type` - (Optional) The type of the storage mount. Defaults to `"LocalStorage"`.
+  - `source` - (Optional) The source of the storage mount. Defaults to `""`.
+  - `destination_path` - (Required) The destination path for the storage mount (e.g. `"G:\\"`).
+  - `credentials_key_vault_reference` - (Optional) A Key Vault reference for storage credentials.
+    - `secret_uri` - (Required) The URI of the Key Vault secret.
+
+Type:
+
+```hcl
+list(object({
+    name             = string
+    type             = optional(string, "LocalStorage")
+    source           = optional(string, "")
+    destination_path = string
+    credentials_key_vault_reference = optional(object({
+      secret_uri = optional(string)
+    }), {})
+  }))
+```
+
+Default: `null`
+
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
 Description: Tags of the resource.
@@ -178,9 +362,39 @@ Type: `map(string)`
 
 Default: `null`
 
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description:   The timeout configuration for azapi resources. The following properties can be specified:
+
+  - `create` - (Optional) The timeout for create operations e.g. `"30m"`, `"1h"`.
+  - `delete` - (Optional) The timeout for delete operations e.g. `"30m"`, `"1h"`.
+  - `read` - (Optional) The timeout for read operations e.g. `"30m"`, `"1h"`.
+  - `update` - (Optional) The timeout for update operations e.g. `"30m"`, `"1h"`.
+
+Type:
+
+```hcl
+object({
+    create = optional(string, null)
+    delete = optional(string, null)
+    read   = optional(string, null)
+    update = optional(string, null)
+  })
+```
+
+Default: `null`
+
+### <a name="input_virtual_network_subnet_id"></a> [virtual\_network\_subnet\_id](#input\_virtual\_network\_subnet\_id)
+
+Description: Optional: The resource ID of the subnet to integrate the App Service Plan with. This enables VNet integration for the plan.
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_worker_count"></a> [worker\_count](#input\_worker\_count)
 
-Description: The number of workers to allocate for this App Service Plan.
+Description: The number of workers to allocate for this App Service Plan. Defaults to `3`, which is the recommended minimum for production workloads.
 
 Type: `number`
 
@@ -202,17 +416,19 @@ The following outputs are exported:
 
 Description: Name of the app service plan
 
-### <a name="output_resource"></a> [resource](#output\_resource)
-
-Description: The full output of the resource.
-
 ### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
 
 Description: Resource id of the app service plan
 
 ## Modules
 
-No modules.
+The following Modules are called:
+
+### <a name="module_avm_interfaces"></a> [avm\_interfaces](#module\_avm\_interfaces)
+
+Source: Azure/avm-utl-interfaces/azure
+
+Version: 0.5.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

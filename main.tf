@@ -1,42 +1,234 @@
-data "azurerm_location" "region" {
-  location = var.location
+# AVM Interfaces module for locks, role assignments, diagnostic settings, and managed identities
+module "avm_interfaces" {
+  source  = "Azure/avm-utl-interfaces/azure"
+  version = "0.5.0"
+
+  diagnostic_settings_v2                    = var.diagnostic_settings
+  enable_telemetry                          = var.enable_telemetry
+  lock                                      = var.lock
+  managed_identities                        = var.managed_identities
+  role_assignment_definition_lookup_enabled = true
+  role_assignment_definition_scope          = "/subscriptions/${data.azapi_client_config.this.subscription_id}"
+  role_assignments                          = var.role_assignments
 }
 
-resource "azurerm_service_plan" "this" {
-  location                        = var.location
-  name                            = var.name
-  os_type                         = var.os_type
-  resource_group_name             = var.resource_group_name
-  sku_name                        = var.sku_name
-  app_service_environment_id      = var.app_service_environment_id
-  maximum_elastic_worker_count    = local.maximum_elastic_worker_count
-  per_site_scaling_enabled        = var.per_site_scaling_enabled
-  premium_plan_auto_scale_enabled = startswith(var.sku_name, "P") ? var.premium_plan_auto_scale_enabled : false
-  tags                            = var.tags
-  worker_count                    = local.worker_count
-  zone_balancing_enabled          = var.zone_balancing_enabled
+resource "azapi_resource" "this" {
+  location  = var.location
+  name      = var.name
+  parent_id = var.parent_id
+  type      = "Microsoft.Web/serverfarms@2025-03-01"
+  body = {
+    kind = local.kind
+    properties = {
+      asyncScalingEnabled       = null
+      freeOfferExpirationTime   = null
+      isCustomMode              = var.os_type == "WindowsManagedInstance"
+      isSpot                    = null
+      isXenon                   = null
+      kubeEnvironmentProfile    = null
+      elasticScaleEnabled       = local.elastic_scale_enabled
+      hostingEnvironmentProfile = var.app_service_environment_id != null ? { id = var.app_service_environment_id } : null
+      hyperV                    = var.os_type == "WindowsContainer"
+      maximumElasticWorkerCount = local.maximum_elastic_worker_count
+      installScripts = var.os_type == "WindowsManagedInstance" && var.install_scripts != null ? [
+        for script in var.install_scripts : {
+          name = script.name
+          source = {
+            type      = script.source.type
+            sourceUri = script.source.source_uri
+          }
+        }
+      ] : null
+      network = var.virtual_network_subnet_id != null ? {
+        virtualNetworkSubnetId = var.virtual_network_subnet_id
+      } : null
+      perSiteScaling = var.per_site_scaling_enabled
+      rdpEnabled     = var.os_type == "WindowsManagedInstance" ? var.rdp_enabled : null
+      storageMounts = var.os_type == "WindowsManagedInstance" && var.storage_mounts != null ? [
+        for mount in var.storage_mounts : {
+          name            = mount.name
+          type            = mount.type
+          source          = mount.source
+          destinationPath = mount.destination_path
+          credentialsKeyVaultReference = {
+            secretUri = mount.credentials_key_vault_reference.secret_uri
+          }
+        }
+      ] : null
+      planDefaultIdentity = var.os_type == "WindowsManagedInstance" && var.plan_default_identity != null ? {
+        identityType                   = var.plan_default_identity.identity_type
+        userAssignedIdentityResourceId = var.plan_default_identity.user_assigned_identity_resource_id
+      } : null
+      registryAdapters = var.os_type == "WindowsManagedInstance" && var.registry_adapters != null ? [
+        for adapter in var.registry_adapters : {
+          registryKey = adapter.registry_key
+          type        = adapter.type
+          keyVaultSecretReference = {
+            secretUri = adapter.key_vault_secret_reference.secret_uri
+          }
+        }
+      ] : null
+      spotExpirationTime = null
+      reserved           = var.os_type == "Linux"
+      targetWorkerCount  = null
+      targetWorkerSizeId = null
+      workerTierName     = null
+      zoneRedundant      = var.zone_balancing_enabled
+    }
+    sku = {
+      name     = var.sku_name
+      capacity = var.worker_count
+      family   = null
+      size     = null
+      tier     = null
+    }
+  }
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  response_export_values    = []
+  retry                     = var.retry
+  schema_validation_enabled = false
+  tags                      = var.tags
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+
+  dynamic "identity" {
+    for_each = module.avm_interfaces.managed_identities_azapi != null ? { this = module.avm_interfaces.managed_identities_azapi } : {}
+
+    content {
+      type         = identity.value.type
+      identity_ids = identity.value.identity_ids
+    }
+  }
+  dynamic "timeouts" {
+    for_each = var.timeouts != null ? { this = var.timeouts } : {}
+
+    content {
+      create = timeouts.value.create
+      delete = timeouts.value.delete
+      read   = timeouts.value.read
+      update = timeouts.value.update
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      body.properties.asyncScalingEnabled,
+      body.properties.freeOfferExpirationTime,
+      body.properties.isSpot,
+      body.properties.isXenon,
+      body.properties.kubeEnvironmentProfile,
+      body.properties.spotExpirationTime,
+      body.properties.targetWorkerCount,
+      body.properties.targetWorkerSizeId,
+      body.properties.workerTierName,
+      body.sku.family,
+      body.sku.size,
+      body.sku.tier
+    ]
+  }
 }
 
-# required AVM resources interfaces
-resource "azurerm_management_lock" "this" {
+moved {
+  from = azurerm_service_plan.this
+  to   = azapi_resource.this
+}
+
+moved {
+  from = azurerm_management_lock.this
+  to   = azapi_resource.lock
+}
+
+moved {
+  from = azurerm_role_assignment.this
+  to   = azapi_resource.role_assignment
+}
+
+data "azapi_client_config" "this" {}
+
+# Lock
+resource "azapi_resource" "lock" {
   count = var.lock != null ? 1 : 0
 
-  lock_level = var.lock.kind
-  name       = coalesce(var.lock.name, "lock-${var.lock.kind}")
-  scope      = azurerm_service_plan.this.id
-  notes      = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
+  name                   = module.avm_interfaces.lock_azapi.name
+  parent_id              = azapi_resource.this.id
+  type                   = module.avm_interfaces.lock_azapi.type
+  body                   = module.avm_interfaces.lock_azapi.body
+  create_headers         = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers         = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers           = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  response_export_values = []
+  retry                  = var.retry
+  update_headers         = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+
+  dynamic "timeouts" {
+    for_each = var.timeouts != null ? { this = var.timeouts } : {}
+
+    content {
+      create = timeouts.value.create
+      delete = timeouts.value.delete
+      read   = timeouts.value.read
+      update = timeouts.value.update
+    }
+  }
+
+  depends_on = [
+    azapi_resource.diagnostic_setting,
+    azapi_resource.role_assignment
+  ]
 }
 
+# Role Assignments
+resource "azapi_resource" "role_assignment" {
+  for_each = module.avm_interfaces.role_assignments_azapi
 
-resource "azurerm_role_assignment" "this" {
-  for_each = var.role_assignments
+  name                   = each.value.name
+  parent_id              = azapi_resource.this.id
+  type                   = each.value.type
+  body                   = each.value.body
+  create_headers         = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers         = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers           = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  response_export_values = []
+  retry                  = var.retry
+  update_headers         = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
-  principal_id                           = each.value.principal_id
-  scope                                  = azurerm_service_plan.this.id
-  condition                              = each.value.condition
-  condition_version                      = each.value.condition_version
-  delegated_managed_identity_resource_id = each.value.delegated_managed_identity_resource_id
-  role_definition_id                     = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? each.value.role_definition_id_or_name : null
-  role_definition_name                   = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? null : each.value.role_definition_id_or_name
-  skip_service_principal_aad_check       = each.value.skip_service_principal_aad_check
+  dynamic "timeouts" {
+    for_each = var.timeouts != null ? { this = var.timeouts } : {}
+
+    content {
+      create = timeouts.value.create
+      delete = timeouts.value.delete
+      read   = timeouts.value.read
+      update = timeouts.value.update
+    }
+  }
+}
+
+# Diagnostic Settings
+resource "azapi_resource" "diagnostic_setting" {
+  for_each = module.avm_interfaces.diagnostic_settings_azapi_v2
+
+  name                   = each.value.name
+  parent_id              = azapi_resource.this.id
+  type                   = each.value.type
+  body                   = each.value.body
+  create_headers         = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers         = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  ignore_null_property   = true
+  read_headers           = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  response_export_values = []
+  retry                  = var.retry
+  update_headers         = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+
+  dynamic "timeouts" {
+    for_each = var.timeouts != null ? { this = var.timeouts } : {}
+
+    content {
+      create = timeouts.value.create
+      delete = timeouts.value.delete
+      read   = timeouts.value.read
+      update = timeouts.value.update
+    }
+  }
 }
