@@ -443,6 +443,7 @@ resource "azapi_resource" "web_app" {
     properties = {
       serverFarmId = module.test.resource_id
       siteConfig = {
+        alwaysOn            = true
         netFrameworkVersion = "v10.0"
         metadata = [
           {
