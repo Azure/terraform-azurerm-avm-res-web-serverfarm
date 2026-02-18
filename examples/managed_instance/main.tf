@@ -343,7 +343,6 @@ data "archive_file" "scripts" {
 }
 
 # Upload scripts.zip as a placeholder for the install script package.
-# Replace the source with your own scripts.zip file.
 resource "azurerm_storage_blob" "scripts_zip" {
   name                   = "scripts.zip"
   storage_account_name   = azapi_resource.storage_account.name
