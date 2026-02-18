@@ -2,6 +2,10 @@ terraform {
   required_version = ">= 1.9, < 2.0"
 
   required_providers {
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.7"
+    }
     azapi = {
       source  = "Azure/azapi"
       version = "~> 2.4"
@@ -326,19 +330,26 @@ resource "azurerm_key_vault_secret" "registry_string" {
 resource "azurerm_key_vault_secret" "registry_dword" {
   key_vault_id = azapi_resource.key_vault.id
   name         = "registry-dword-value"
-  value        = "23FE" # Hexadecimal string for DWORD value of 35
+  value        = "336" # Must be an Integer
 
   depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
 }
 
+data "archive_file" "scripts" {
+  type             = "zip"
+  source_dir       = "${path.module}/scripts"
+  output_path      = "${path.module}/scripts.zip"
+  output_file_mode = "0644"
+}
+
 # Upload scripts.zip as a placeholder for the install script package.
-# Replace the source with your own scripts.zip file.
 resource "azurerm_storage_blob" "scripts_zip" {
   name                   = "scripts.zip"
   storage_account_name   = azapi_resource.storage_account.name
   storage_container_name = azapi_resource.blob_container.name
   type                   = "Block"
-  source                 = "${path.module}/scripts.zip"
+  content_md5            = data.archive_file.scripts.output_md5
+  source                 = data.archive_file.scripts.output_path
 
   depends_on = [azapi_resource.role_assignment_blob_reader, azapi_resource.role_assignment_blob_contributor_current_user]
 }
@@ -351,8 +362,7 @@ resource "azapi_resource" "role_assignment_blob_contributor_current_user" {
   type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
   body = {
     properties = {
-      principalId = data.azapi_client_config.this.object_id
-      #principalType    = "User"
+      principalId      = data.azapi_client_config.this.object_id
       roleDefinitionId = "/subscriptions/${data.azapi_client_config.this.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe"
     }
   }
@@ -361,8 +371,7 @@ resource "azapi_resource" "role_assignment_blob_contributor_current_user" {
   depends_on = [azapi_resource.blob_container]
 }
 
-# This is the module call
-# Windows Managed Instance uses isCustomMode, install scripts, and plan default identity
+# This is the module call to create the App Service Managed Instance plan with custom configuration using install scripts, registry adapters, and storage mounts.
 module "test" {
   source = "../.."
 
@@ -372,9 +381,10 @@ module "test" {
   parent_id        = azapi_resource.resource_group.id
   enable_telemetry = var.enable_telemetry
   # Install scripts - references the scripts.zip blob in the storage account
+  # The install script logs can be found in C:\InstallScripts on the VM instances
   install_scripts = [
     {
-      name = "FontInstaller"
+      name = "CustomInstaller"
       source = {
         type       = "RemoteAzureBlob"
         source_uri = "https://${azapi_resource.storage_account.name}.blob.core.windows.net/${azapi_resource.blob_container.name}/scripts.zip"
@@ -394,14 +404,14 @@ module "test" {
   # Registry adapters - configure Windows registry keys via Key Vault references
   registry_adapters = [
     {
-      registry_key = "HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/Config" # Registry key must start with HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, or HKEY_USERS and contain at least one forward slash.
+      registry_key = "HKEY_LOCAL_MACHINE/SOFTWARE/MyApp1/RegistryAdapterString" # Registry key must start with HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, or HKEY_USERS and contain at least one forward slash.
       type         = "String"
       key_vault_secret_reference = {
         secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net/secrets/${azurerm_key_vault_secret.registry_string.name}"
       }
     },
     {
-      registry_key = "HKEY_LOCAL_MACHINE/SOFTWARE/MyApp/DWordData" # Registry key must start with HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, or HKEY_USERS and contain at least one forward slash.
+      registry_key = "HKEY_LOCAL_MACHINE/SOFTWARE/MyApp1/RegistryAdapterDWORD" # Registry key must start with HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, or HKEY_USERS and contain at least one forward slash.
       type         = "DWORD"
       key_vault_secret_reference = {
         secret_uri = "https://${azapi_resource.key_vault.name}.vault.azure.net/secrets/${azurerm_key_vault_secret.registry_dword.name}"
@@ -443,6 +453,7 @@ resource "azapi_resource" "web_app" {
     properties = {
       serverFarmId = module.test.resource_id
       siteConfig = {
+        alwaysOn            = true # NOTE: If the web app is not deployed and running, you will not be able to RDP onto the instances
         netFrameworkVersion = "v10.0"
         metadata = [
           {
