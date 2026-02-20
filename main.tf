@@ -16,7 +16,7 @@ resource "azapi_resource" "this" {
   location  = var.location
   name      = var.name
   parent_id = var.parent_id
-  type      = "Microsoft.Web/serverfarms@2025-03-01"
+  type      = var.server_farm_resource_type
   body = {
     kind = local.kind
     properties = {

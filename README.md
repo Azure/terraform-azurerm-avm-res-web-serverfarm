@@ -319,6 +319,14 @@ map(object({
 
 Default: `{}`
 
+### <a name="input_server_farm_resource_type"></a> [server\_farm\_resource\_type](#input\_server\_farm\_resource\_type)
+
+Description: The resource type for the server farm. Defaults to `Microsoft.Web/serverfarms`.
+
+Type: `string`
+
+Default: `"Microsoft.Web/serverfarms@2025-03-01"`
+
 ### <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name)
 
 Description: The SKU name of the service plan. Defaults to `P1v2`.
