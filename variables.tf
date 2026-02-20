@@ -268,6 +268,12 @@ variable "role_assignments" {
   nullable    = false
 }
 
+variable "server_farm_resource_type" {
+  type        = string
+  default     = "Microsoft.Web/serverfarms@2025-03-01"
+  description = "The resource type for the server farm. Defaults to `Microsoft.Web/serverfarms`."
+}
+
 variable "sku_name" {
   type        = string
   default     = "P1v2" # P1v2 is the minimum SKU for zone redundancy
