@@ -1,3 +1,0 @@
-This example tests multiple SKU kinds (FC1, WS1) that are specialized SKUs
-not intended for standard/premium production workloads. APRL well-architected
-checks for tier and zone redundancy are not applicable to these SKU types.
