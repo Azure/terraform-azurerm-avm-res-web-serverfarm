@@ -11,8 +11,8 @@ locals {
     windows_premium = {
       os_type        = "Windows"
       sku_name       = "P1v2"
-      worker_count   = 3
-      zone_balancing = true
+      worker_count   = 1
+      zone_balancing = false
     }
     flex_consumption = {
       os_type        = "Linux"
