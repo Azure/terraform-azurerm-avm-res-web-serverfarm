@@ -19,7 +19,7 @@ resource "azapi_resource" "this" {
   type      = var.server_farm_resource_type
   body = {
     kind = local.kind
-    properties = {
+    properties = merge({
       asyncScalingEnabled       = null
       freeOfferExpirationTime   = null
       isCustomMode              = var.os_type == "WindowsManagedInstance"
@@ -29,7 +29,6 @@ resource "azapi_resource" "this" {
       elasticScaleEnabled       = local.elastic_scale_enabled
       hostingEnvironmentProfile = var.app_service_environment_id != null ? { id = var.app_service_environment_id } : null
       hyperV                    = var.os_type == "WindowsContainer"
-      maximumElasticWorkerCount = local.maximum_elastic_worker_count
       installScripts = var.os_type == "WindowsManagedInstance" && var.install_scripts != null ? [
         for script in var.install_scripts : {
           name = script.name
@@ -74,10 +73,15 @@ resource "azapi_resource" "this" {
       targetWorkerSizeId = null
       workerTierName     = null
       zoneRedundant      = var.zone_balancing_enabled
-    }
+      },
+      # FC1 (Flex Consumption) maximumElasticWorkerCount is managed by Azure; omit it so ignore_missing_property handles drift
+      local.is_flex_consumption ? {} : {
+        maximumElasticWorkerCount = local.maximum_elastic_worker_count
+      }
+    )
     sku = {
       name     = var.sku_name
-      capacity = var.worker_count
+      capacity = local.sku_capacity
       family   = null
       size     = null
       tier     = null
