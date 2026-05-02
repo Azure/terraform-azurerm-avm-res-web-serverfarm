@@ -164,75 +164,76 @@ resource "azapi_resource" "subnet" {
   response_export_values = []
 }
 
-# Subnet for Azure Bastion
-resource "azapi_resource" "bastion_subnet" {
-  name      = "AzureBastionSubnet"
-  parent_id = azapi_resource.virtual_network.id
-  type      = "Microsoft.Network/virtualNetworks/subnets@2024-05-01"
-  body = {
-    properties = {
-      addressPrefix = "10.0.1.0/26"
-    }
-  }
-  response_export_values = []
-
-  depends_on = [azapi_resource.subnet]
-}
-
-# Public IP for Azure Bastion
-resource "azapi_resource" "bastion_public_ip" {
-  location  = azapi_resource.resource_group.location
-  name      = "${module.naming.public_ip.name_unique}-bastion"
-  parent_id = azapi_resource.resource_group.id
-  type      = "Microsoft.Network/publicIPAddresses@2024-05-01"
-  body = {
-    properties = {
-      publicIPAllocationMethod = "Static"
-      publicIPAddressVersion   = "IPv4"
-    }
-    sku = {
-      name = "Standard"
-    }
-    zones = ["1", "2", "3"]
-  }
-  response_export_values = []
-}
-
-# Azure Bastion Host with Standard SKU
-resource "azapi_resource" "bastion_host" {
-  location  = azapi_resource.resource_group.location
-  name      = module.naming.bastion_host.name_unique
-  parent_id = azapi_resource.resource_group.id
-  type      = "Microsoft.Network/bastionHosts@2024-05-01"
-  body = {
-    properties = {
-      ipConfigurations = [
-        {
-          name = "bastion-ip-config"
-          properties = {
-            publicIPAddress = {
-              id = azapi_resource.bastion_public_ip.id
-            }
-            subnet = {
-              id = azapi_resource.bastion_subnet.id
-            }
-          }
-        }
-      ]
-      scaleUnits = 2
-    }
-    sku = {
-      name = "Standard"
-    }
-    zones = ["1", "2", "3"]
-  }
-  response_export_values = []
-
-  timeouts {
-    create = "60m"
-    delete = "60m"
-  }
-}
+# Azure Bastion is commented out to keep CI/smoke runs short — Bastion adds
+# 30–60 min to apply/destroy. Uncomment all three resources below if you need
+# RDP access to the Managed Instance workers (rdp_enabled = true on the plan).
+#
+# resource "azapi_resource" "bastion_subnet" {
+#   name      = "AzureBastionSubnet"
+#   parent_id = azapi_resource.virtual_network.id
+#   type      = "Microsoft.Network/virtualNetworks/subnets@2024-05-01"
+#   body = {
+#     properties = {
+#       addressPrefix = "10.0.1.0/26"
+#     }
+#   }
+#   response_export_values = []
+#
+#   depends_on = [azapi_resource.subnet]
+# }
+#
+# resource "azapi_resource" "bastion_public_ip" {
+#   location  = azapi_resource.resource_group.location
+#   name      = "${module.naming.public_ip.name_unique}-bastion"
+#   parent_id = azapi_resource.resource_group.id
+#   type      = "Microsoft.Network/publicIPAddresses@2024-05-01"
+#   body = {
+#     properties = {
+#       publicIPAllocationMethod = "Static"
+#       publicIPAddressVersion   = "IPv4"
+#     }
+#     sku = {
+#       name = "Standard"
+#     }
+#     zones = ["1", "2", "3"]
+#   }
+#   response_export_values = []
+# }
+#
+# resource "azapi_resource" "bastion_host" {
+#   location  = azapi_resource.resource_group.location
+#   name      = module.naming.bastion_host.name_unique
+#   parent_id = azapi_resource.resource_group.id
+#   type      = "Microsoft.Network/bastionHosts@2024-05-01"
+#   body = {
+#     properties = {
+#       ipConfigurations = [
+#         {
+#           name = "bastion-ip-config"
+#           properties = {
+#             publicIPAddress = {
+#               id = azapi_resource.bastion_public_ip.id
+#             }
+#             subnet = {
+#               id = azapi_resource.bastion_subnet.id
+#             }
+#           }
+#         }
+#       ]
+#       scaleUnits = 2
+#     }
+#     sku = {
+#       name = "Standard"
+#     }
+#     zones = ["1", "2", "3"]
+#   }
+#   response_export_values = []
+#
+#   timeouts {
+#     create = "60m"
+#     delete = "60m"
+#   }
+# }
 
 # File share for H: drive mount
 resource "azapi_resource" "file_share" {
@@ -451,7 +452,11 @@ resource "azapi_resource" "web_app" {
   body = {
     kind = "app"
     properties = {
-      serverFarmId = module.test.resource_id
+      # Azure stores the App Service Plan ID with the lowercase `serverfarms`
+      # segment, while the module's `resource_id` output uses the canonical
+      # `serverFarms` casing for strict azurerm parsers (issue #129). Match the
+      # stored casing here so azapi readback doesn't show a case-only diff.
+      serverFarmId = replace(module.test.resource_id, "serverFarms", "serverfarms")
       siteConfig = {
         alwaysOn            = true # NOTE: If the web app is not deployed and running, you will not be able to RDP onto the instances
         netFrameworkVersion = "v10.0"
