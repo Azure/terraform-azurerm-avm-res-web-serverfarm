@@ -5,5 +5,5 @@ output "name" {
 
 output "resource_id" {
   description = "Resource id of the app service plan"
-  value       = replace(azapi_resource.this.id, "Microsoft.Web/serverfarms/", "Microsoft.Web/serverFarms/")
+  value       = azapi_resource.this.id
 }
