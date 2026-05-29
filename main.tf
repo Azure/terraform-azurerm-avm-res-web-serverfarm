@@ -130,6 +130,11 @@ resource "azapi_resource" "this" {
       body.sku.size,
       body.sku.tier
     ]
+
+    precondition {
+      condition     = !local.validate_flex_consumption_zone_redundancy || contains(local.flex_consumption_zone_redundant_locations, local.normalized_location)
+      error_message = "Flex Consumption (sku_name = \"FC1\") zone redundancy (zone_balancing_enabled = true) is not available in region \"${var.location}\". Choose a region that supports zone-redundant Flex Consumption (supported: ${join(", ", local.flex_consumption_zone_redundant_locations)}), or set zone_balancing_enabled = false."
+    }
   }
 }
 
@@ -149,6 +154,20 @@ moved {
 }
 
 data "azapi_client_config" "this" {}
+
+# FC1 (Flex Consumption) zone redundancy is region-restricted. This data source is only evaluated
+# when FC1 is combined with zone_balancing_enabled, and feeds the precondition on azapi_resource.this.
+# Reference: https://github.com/Azure/terraform-azurerm-avm-res-web-serverfarm/issues/133
+data "azapi_resource_action" "flex_consumption_geo_regions" {
+  count = local.validate_flex_consumption_zone_redundancy ? 1 : 0
+
+  action                 = "geoRegions"
+  method                 = "GET"
+  query_parameters       = { sku = ["FlexConsumption"] }
+  resource_id            = "/subscriptions/${data.azapi_client_config.this.subscription_id}/providers/Microsoft.Web"
+  type                   = "Microsoft.Web@2024-11-01"
+  response_export_values = ["value"]
+}
 
 # Lock
 resource "azapi_resource" "lock" {

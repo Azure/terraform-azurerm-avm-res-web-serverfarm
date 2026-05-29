@@ -3,6 +3,13 @@ locals {
   # EP/P SKUs are user-controllable, others are false.
   # Reference: https://github.com/Azure/terraform-azurerm-avm-res-web-serverfarm/issues/125
   elastic_scale_enabled = local.is_workflow_standard ? true : (can(regex("^(EP|P)", var.sku_name)) ? var.premium_plan_auto_scale_enabled : false)
+  # Normalized region names that support zone-redundant Flex Consumption, derived from the
+  # FCZONEREDUNDANCY token in the semicolon-delimited orgDomain capability string.
+  flex_consumption_zone_redundant_locations = local.validate_flex_consumption_zone_redundancy ? [
+    for region in data.azapi_resource_action.flex_consumption_geo_regions[0].output.value :
+    replace(lower(region.properties.name), " ", "")
+    if contains(split(";", upper(region.properties.orgDomain)), "FCZONEREDUNDANCY")
+  ] : []
   # Flex Consumption (FC1) requires special handling for kind, capacity, and maximumElasticWorkerCount
   is_flex_consumption = var.sku_name == "FC1"
   # Workflow Standard (WS1/WS2/WS3) requires kind="elastic" and elasticScaleEnabled=true
@@ -14,6 +21,13 @@ locals {
   kind = local.is_flex_consumption ? "functionapp" : (local.is_workflow_standard ? "elastic" : (var.os_type == "Linux" ? "linux" : "windows"))
   # Maximum elastic worker count is applicable to Elastic Premium, WS, and Flex Consumption SKUs
   maximum_elastic_worker_count = can(regex("^(EP|WS|FC)", var.sku_name)) ? var.maximum_elastic_worker_count : var.worker_count
+  # Normalized (lowercased, spaces removed) location used to compare against geoRegions display names.
+  normalized_location = replace(lower(var.location), " ", "")
   # FC1 capacity is managed by Azure (always 0), other SKUs use worker_count
   sku_capacity = local.is_flex_consumption ? 0 : var.worker_count
+  # FC1 (Flex Consumption) zone redundancy is only available in a subset of Azure regions.
+  # When it is requested, query the regions that advertise the FCZONEREDUNDANCY capability so the
+  # module can fail early with an actionable message instead of an opaque Azure 400.
+  # Reference: https://github.com/Azure/terraform-azurerm-avm-res-web-serverfarm/issues/133
+  validate_flex_consumption_zone_redundancy = local.is_flex_consumption && var.zone_balancing_enabled
 }
