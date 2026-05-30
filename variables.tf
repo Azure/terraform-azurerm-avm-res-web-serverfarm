@@ -347,5 +347,9 @@ variable "worker_count" {
 variable "zone_balancing_enabled" {
   type        = bool
   default     = true
-  description = "Should zone balancing be enabled for this App Service Plan? Defaults to `true`."
+  description = <<DESCRIPTION
+Should zone balancing be enabled for this App Service Plan? Defaults to `true`.
+
+Note: when `sku_name = "FC1"` (Flex Consumption), zone redundancy is only available in Azure regions that advertise the `FCZONEREDUNDANCY` capability. In regions that do not support it, this module fails early with a precondition error listing the supported regions. Set this to `false` to deploy FC1 in an unsupported region.
+DESCRIPTION
 }

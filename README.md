@@ -34,6 +34,7 @@ The following resources are used by this module:
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
 - [azapi_client_config.telemetry](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
 - [azapi_client_config.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
+- [azapi_resource_action.flex_consumption_geo_regions](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/resource_action) (data source)
 - [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
 <!-- markdownlint-disable MD013 -->
@@ -411,6 +412,8 @@ Default: `3`
 ### <a name="input_zone_balancing_enabled"></a> [zone\_balancing\_enabled](#input\_zone\_balancing\_enabled)
 
 Description: Should zone balancing be enabled for this App Service Plan? Defaults to `true`.
+
+Note: when `sku_name = "FC1"` (Flex Consumption), zone redundancy is only available in Azure regions that advertise the `FCZONEREDUNDANCY` capability. In regions that do not support it, this module fails early with a precondition error listing the supported regions. Set this to `false` to deploy FC1 in an unsupported region.
 
 Type: `bool`
 
