@@ -403,7 +403,7 @@ Default: `null`
 
 ### <a name="input_worker_count"></a> [worker\_count](#input\_worker\_count)
 
-Description: The number of workers to allocate for this App Service Plan. Defaults to `3`, which is the recommended minimum for production workloads.
+Description: The number of workers to allocate for this App Service Plan. Defaults to `3`, which is the recommended minimum for production workloads. Set to `null` when worker count is managed by an external autoscale setting.
 
 Type: `number`
 
@@ -439,7 +439,7 @@ The following Modules are called:
 
 Source: Azure/avm-utl-interfaces/azure
 
-Version: 0.5.0
+Version: 0.6.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
