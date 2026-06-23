@@ -341,7 +341,7 @@ variable "virtual_network_subnet_id" {
 variable "worker_count" {
   type        = number
   default     = 3
-  description = "The number of workers to allocate for this App Service Plan. Defaults to `3`, which is the recommended minimum for production workloads."
+  description = "The number of workers to allocate for this App Service Plan. Defaults to `3`, which is the recommended minimum for production workloads. Set to `null` when worker count is managed by an external autoscale setting."
 }
 
 variable "zone_balancing_enabled" {

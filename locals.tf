@@ -23,7 +23,7 @@ locals {
   maximum_elastic_worker_count = can(regex("^(EP|WS|FC)", var.sku_name)) ? var.maximum_elastic_worker_count : var.worker_count
   # Normalized (lowercased, spaces removed) location used to compare against geoRegions display names.
   normalized_location = replace(lower(var.location), " ", "")
-  # FC1 capacity is managed by Azure (always 0), other SKUs use worker_count
+  # FC1 capacity is managed by Azure (always 0), other SKUs use worker_count when supplied.
   sku_capacity = local.is_flex_consumption ? 0 : var.worker_count
   # FC1 (Flex Consumption) zone redundancy is only available in a subset of Azure regions.
   # When it is requested, query the regions that advertise the FCZONEREDUNDANCY capability so the

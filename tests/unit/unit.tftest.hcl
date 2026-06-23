@@ -63,6 +63,33 @@ run "non_flex_skips_region_lookup" {
     condition     = can(azapi_resource.this)
     error_message = "The App Service Plan should be created for a standard SKU."
   }
+
+  assert {
+    condition     = azapi_resource.this.body.sku.capacity == 3
+    error_message = "The App Service Plan should manage SKU capacity by default."
+  }
+}
+
+# worker_count = null supports external autoscale by omitting capacity fields that Azure Monitor owns.
+run "worker_count_null_omits_capacity" {
+  command = apply
+
+  variables {
+    location               = "westus"
+    sku_name               = "S1"
+    worker_count           = null
+    zone_balancing_enabled = false
+  }
+
+  assert {
+    condition     = !contains(keys(azapi_resource.this.body.sku), "capacity")
+    error_message = "SKU capacity must be omitted when worker_count is null."
+  }
+
+  assert {
+    condition     = !contains(keys(azapi_resource.this.body.properties), "maximumElasticWorkerCount")
+    error_message = "maximumElasticWorkerCount must be omitted when worker_count is null for non-elastic SKUs."
+  }
 }
 
 # FC1 + zone balancing in a supported region must pass the precondition and create the plan.

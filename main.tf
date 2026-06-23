@@ -1,7 +1,7 @@
 # AVM Interfaces module for locks, role assignments, diagnostic settings, and managed identities
 module "avm_interfaces" {
   source  = "Azure/avm-utl-interfaces/azure"
-  version = "0.5.0"
+  version = "0.6.0"
 
   diagnostic_settings_v2                    = var.diagnostic_settings
   enable_telemetry                          = var.enable_telemetry
@@ -74,18 +74,22 @@ resource "azapi_resource" "this" {
       workerTierName     = null
       zoneRedundant      = var.zone_balancing_enabled
       },
-      # FC1 (Flex Consumption) maximumElasticWorkerCount is managed by Azure; omit it so ignore_missing_property handles drift
-      local.is_flex_consumption ? {} : {
+      # FC1 and externally scaled plans omit maximumElasticWorkerCount so ignore_missing_property handles drift.
+      local.is_flex_consumption || local.maximum_elastic_worker_count == null ? {} : {
         maximumElasticWorkerCount = local.maximum_elastic_worker_count
       }
     )
-    sku = {
-      name     = var.sku_name
-      capacity = local.sku_capacity
-      family   = null
-      size     = null
-      tier     = null
-    }
+    sku = merge(
+      {
+        name   = var.sku_name
+        family = null
+        size   = null
+        tier   = null
+      },
+      local.sku_capacity == null ? {} : {
+        capacity = local.sku_capacity
+      }
+    )
   }
   create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
@@ -104,6 +108,7 @@ resource "azapi_resource" "this" {
       identity_ids = identity.value.identity_ids
     }
   }
+
   dynamic "timeouts" {
     for_each = var.timeouts != null ? { this = var.timeouts } : {}
 
