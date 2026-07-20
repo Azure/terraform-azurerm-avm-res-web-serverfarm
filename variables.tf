@@ -36,6 +36,12 @@ variable "app_service_environment_id" {
   description = "Optional: The ID of the App Service Environment."
 }
 
+variable "async_scaling_enabled" {
+  type        = bool
+  default     = null
+  description = "Optional: Whether asynchronous scaling is enabled for the App Service Plan. When enabled, the plan attempts to scale asynchronously if there are insufficient workers to scale synchronously."
+}
+
 variable "diagnostic_settings" {
   type = map(object({
     name = optional(string, null)
