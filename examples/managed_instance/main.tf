@@ -18,6 +18,10 @@ terraform {
       source  = "hashicorp/random"
       version = ">= 3.5.0, < 4.0.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.13"
+    }
   }
 }
 
@@ -285,6 +289,12 @@ resource "azapi_resource" "role_assignment_kv_secrets_officer" {
   response_export_values = []
 }
 
+resource "time_sleep" "key_vault_rbac_propagation" {
+  create_duration = "60s"
+
+  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+}
+
 # Grant the managed identity "Key Vault Secrets User" on the Key Vault
 # so the App Service Plan can read secrets for registry adapters and storage mount credentials
 resource "azapi_resource" "role_assignment_kv_secrets_user" {
@@ -315,7 +325,7 @@ resource "azurerm_key_vault_secret" "storage_key" {
   name         = "storage-account-key"
   value        = "DefaultEndpointsProtocol=https;AccountName=${azapi_resource.storage_account.name};AccountKey=${data.azapi_resource_action.storage_account_keys.output.keys[0].value};EndpointSuffix=core.windows.net"
 
-  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+  depends_on = [time_sleep.key_vault_rbac_propagation]
 }
 
 # Key Vault secret for a registry adapter string value
@@ -324,7 +334,7 @@ resource "azurerm_key_vault_secret" "registry_string" {
   name         = "registry-string-value"
   value        = "MyExampleStringValue"
 
-  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+  depends_on = [time_sleep.key_vault_rbac_propagation]
 }
 
 # Key Vault secret for a registry adapter DWORD value
@@ -333,7 +343,7 @@ resource "azurerm_key_vault_secret" "registry_dword" {
   name         = "registry-dword-value"
   value        = "336" # Must be an Integer
 
-  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+  depends_on = [time_sleep.key_vault_rbac_propagation]
 }
 
 data "archive_file" "scripts" {

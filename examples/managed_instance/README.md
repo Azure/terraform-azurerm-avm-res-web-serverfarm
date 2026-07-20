@@ -30,6 +30,10 @@ terraform {
       source  = "hashicorp/random"
       version = ">= 3.5.0, < 4.0.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.13"
+    }
   }
 }
 
@@ -297,6 +301,12 @@ resource "azapi_resource" "role_assignment_kv_secrets_officer" {
   response_export_values = []
 }
 
+resource "time_sleep" "key_vault_rbac_propagation" {
+  create_duration = "60s"
+
+  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+}
+
 # Grant the managed identity "Key Vault Secrets User" on the Key Vault
 # so the App Service Plan can read secrets for registry adapters and storage mount credentials
 resource "azapi_resource" "role_assignment_kv_secrets_user" {
@@ -327,7 +337,7 @@ resource "azurerm_key_vault_secret" "storage_key" {
   name         = "storage-account-key"
   value        = "DefaultEndpointsProtocol=https;AccountName=${azapi_resource.storage_account.name};AccountKey=${data.azapi_resource_action.storage_account_keys.output.keys[0].value};EndpointSuffix=core.windows.net"
 
-  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+  depends_on = [time_sleep.key_vault_rbac_propagation]
 }
 
 # Key Vault secret for a registry adapter string value
@@ -336,7 +346,7 @@ resource "azurerm_key_vault_secret" "registry_string" {
   name         = "registry-string-value"
   value        = "MyExampleStringValue"
 
-  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+  depends_on = [time_sleep.key_vault_rbac_propagation]
 }
 
 # Key Vault secret for a registry adapter DWORD value
@@ -345,7 +355,7 @@ resource "azurerm_key_vault_secret" "registry_dword" {
   name         = "registry-dword-value"
   value        = "336" # Must be an Integer
 
-  depends_on = [azapi_resource.role_assignment_kv_secrets_officer]
+  depends_on = [time_sleep.key_vault_rbac_propagation]
 }
 
 data "archive_file" "scripts" {
@@ -501,6 +511,8 @@ The following requirements are needed by this module:
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (>= 3.5.0, < 4.0.0)
 
+- <a name="requirement_time"></a> [time](#requirement\_time) (~> 0.13)
+
 ## Resources
 
 The following resources are used by this module:
@@ -523,6 +535,7 @@ The following resources are used by this module:
 - [azurerm_key_vault_secret.storage_key](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
 - [azurerm_storage_blob.scripts_zip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_blob) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
+- [time_sleep.key_vault_rbac_propagation](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep) (resource)
 - [archive_file.scripts](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) (data source)
 - [azapi_client_config.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
 - [azapi_resource_action.storage_account_keys](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/resource_action) (data source)
