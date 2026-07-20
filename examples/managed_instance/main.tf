@@ -52,9 +52,9 @@ module "naming" {
 }
 
 # This is required for resource modules
-# Hardcoding location due to quota constraints
+# Managed Instance on App Service is available in a limited set of preview regions.
 resource "azapi_resource" "resource_group" {
-  location               = "australiaeast"
+  location               = "eastus"
   name                   = module.naming.resource_group.name_unique
   type                   = "Microsoft.Resources/resourceGroups@2024-03-01"
   response_export_values = []
