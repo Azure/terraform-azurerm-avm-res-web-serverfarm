@@ -78,6 +78,14 @@ Type: `string`
 
 Default: `null`
 
+### <a name="input_async_scaling_enabled"></a> [async\_scaling\_enabled](#input\_async\_scaling\_enabled)
+
+Description: Optional: Whether asynchronous scaling is enabled for the App Service Plan. When enabled, the plan attempts to scale asynchronously if there are insufficient workers to scale synchronously.
+
+Type: `bool`
+
+Default: `null`
+
 ### <a name="input_diagnostic_settings"></a> [diagnostic\_settings](#input\_diagnostic\_settings)
 
 Description:   A map of diagnostic settings to create on the App Service Environment (ASE). The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.

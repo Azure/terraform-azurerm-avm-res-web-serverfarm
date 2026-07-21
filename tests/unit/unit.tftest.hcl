@@ -68,6 +68,27 @@ run "non_flex_skips_region_lookup" {
     condition     = azapi_resource.this.body.sku.capacity == 3
     error_message = "The App Service Plan should manage SKU capacity by default."
   }
+
+  assert {
+    condition     = !contains(keys(azapi_resource.this.body.properties), "asyncScalingEnabled")
+    error_message = "Async scaling must be omitted when async_scaling_enabled is unset."
+  }
+}
+
+run "async_scaling_enabled" {
+  command = apply
+
+  variables {
+    async_scaling_enabled  = true
+    location               = "westus"
+    sku_name               = "P1v2"
+    zone_balancing_enabled = false
+  }
+
+  assert {
+    condition     = azapi_resource.this.body.properties.asyncScalingEnabled == true
+    error_message = "Async scaling must be enabled in the App Service Plan request body."
+  }
 }
 
 # worker_count = null supports external autoscale by omitting capacity fields that Azure Monitor owns.
