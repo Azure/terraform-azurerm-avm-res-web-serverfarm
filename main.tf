@@ -20,7 +20,6 @@ resource "azapi_resource" "this" {
   body = {
     kind = local.kind
     properties = merge({
-      asyncScalingEnabled       = null
       freeOfferExpirationTime   = null
       isCustomMode              = var.os_type == "WindowsManagedInstance"
       isSpot                    = null
@@ -74,6 +73,9 @@ resource "azapi_resource" "this" {
       workerTierName     = null
       zoneRedundant      = var.zone_balancing_enabled
       },
+      var.async_scaling_enabled == null ? {} : {
+        asyncScalingEnabled = var.async_scaling_enabled
+      },
       # FC1 and externally scaled plans omit maximumElasticWorkerCount so ignore_missing_property handles drift.
       local.is_flex_consumption || local.maximum_elastic_worker_count == null ? {} : {
         maximumElasticWorkerCount = local.maximum_elastic_worker_count
@@ -122,7 +124,6 @@ resource "azapi_resource" "this" {
 
   lifecycle {
     ignore_changes = [
-      body.properties.asyncScalingEnabled,
       body.properties.freeOfferExpirationTime,
       body.properties.isSpot,
       body.properties.isXenon,
