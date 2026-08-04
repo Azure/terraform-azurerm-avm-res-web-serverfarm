@@ -24,7 +24,7 @@ terraform {
     }
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">= 3.0, < 5.0"
+      version = ">= 3.0, < 5.1"
     }
     random = {
       source  = "hashicorp/random"
@@ -36,6 +36,8 @@ terraform {
 provider "azapi" {}
 
 provider "azurerm" {
+  resource_providers_to_register = ["Microsoft.KeyVault", "Microsoft.ManagedIdentity", "Microsoft.Network", "Microsoft.Storage", "Microsoft.Web"]
+
   features {
     key_vault {
       purge_soft_delete_on_destroy          = false
@@ -497,7 +499,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.4)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.0, < 5.0)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.0, < 5.1)
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (>= 3.5.0, < 4.0.0)
 

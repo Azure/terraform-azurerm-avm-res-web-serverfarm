@@ -31,7 +31,7 @@ module "naming" {
 # This is required for resource modules
 # Hardcoding location due to quota constraints
 resource "azapi_resource" "resource_group" {
-  location               = "australiaeast"
+  location               = local.test_regions[random_integer.region_index.result]
   name                   = module.naming.resource_group.name_unique
   type                   = "Microsoft.Resources/resourceGroups@2024-03-01"
   response_export_values = []
@@ -47,5 +47,10 @@ module "test" {
   os_type          = "WindowsContainer"
   parent_id        = azapi_resource.resource_group.id
   enable_telemetry = var.enable_telemetry
+  retry = {
+    error_message_regex  = ["No available instances"]
+    interval_seconds     = 30
+    max_interval_seconds = 300
+  }
   sku_name         = "P1v3"
 }

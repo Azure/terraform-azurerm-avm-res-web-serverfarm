@@ -24,6 +24,8 @@ terraform {
 provider "azapi" {}
 
 provider "azurerm" {
+  resource_providers_to_register = ["Microsoft.KeyVault", "Microsoft.ManagedIdentity", "Microsoft.Network", "Microsoft.Storage", "Microsoft.Web"]
+
   features {
     key_vault {
       purge_soft_delete_on_destroy          = false
