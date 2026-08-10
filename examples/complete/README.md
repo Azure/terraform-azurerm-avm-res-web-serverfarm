@@ -92,6 +92,12 @@ module "test" {
     }
   }
   enable_telemetry = var.enable_telemetry
+  # Azure lock deletion is eventually consistent; retry child deletions until it propagates.
+  retry = {
+    error_message_regex  = ["ScopeLocked"]
+    interval_seconds     = 5
+    max_interval_seconds = 60
+  }
   # Management lock - prevents accidental deletion
   lock = {
     kind = "CanNotDelete"
