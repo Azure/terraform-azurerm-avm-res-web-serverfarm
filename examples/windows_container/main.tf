@@ -52,5 +52,5 @@ module "test" {
     interval_seconds     = 30
     max_interval_seconds = 300
   }
-  sku_name         = "P1v3"
+  sku_name = "P1v3"
 }
