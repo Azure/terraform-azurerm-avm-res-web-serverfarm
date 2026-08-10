@@ -1,0 +1,1 @@
+Windows Container App Service plans require zonal VM quota, which is unavailable in the AVM test subscriptions.
