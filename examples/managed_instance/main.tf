@@ -348,11 +348,11 @@ data "archive_file" "scripts" {
 # Upload scripts.zip as a placeholder for the install script package.
 resource "azurerm_storage_blob" "scripts_zip" {
   name                   = "scripts.zip"
-  storage_account_name   = azapi_resource.storage_account.name
-  storage_container_name = azapi_resource.blob_container.name
   type                   = "Block"
   content_md5            = data.archive_file.scripts.output_md5
   source                 = data.archive_file.scripts.output_path
+  storage_account_name   = azapi_resource.storage_account.name
+  storage_container_name = azapi_resource.blob_container.name
 
   depends_on = [azapi_resource.role_assignment_blob_reader, azapi_resource.role_assignment_blob_contributor_current_user]
 }

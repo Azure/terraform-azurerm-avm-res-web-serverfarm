@@ -85,12 +85,6 @@ module "test" {
     }
   }
   enable_telemetry = var.enable_telemetry
-  # Azure lock deletion is eventually consistent; retry child deletions until it propagates.
-  retry = {
-    error_message_regex  = ["ScopeLocked"]
-    interval_seconds     = 5
-    max_interval_seconds = 60
-  }
   # Management lock - prevents accidental deletion
   lock = {
     kind = "CanNotDelete"
@@ -100,6 +94,12 @@ module "test" {
   managed_identities = {
     system_assigned            = true
     user_assigned_resource_ids = [azapi_resource.managed_identity.id]
+  }
+  # Azure lock deletion is eventually consistent; retry child deletions until it propagates.
+  retry = {
+    error_message_regex  = ["ScopeLocked"]
+    interval_seconds     = 5
+    max_interval_seconds = 60
   }
   # Role assignments - grant the managed identity Reader access
   role_assignments = {
