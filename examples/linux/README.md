@@ -52,7 +52,7 @@ module "test" {
   name             = module.naming.app_service_plan.name_unique
   os_type          = "Linux"
   parent_id        = azapi_resource.resource_group.id
-  enable_telemetry = var.enable_telemetry
+  enable_telemetry = false
 }
 ```
 

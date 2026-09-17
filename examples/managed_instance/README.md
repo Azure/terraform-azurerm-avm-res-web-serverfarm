@@ -394,7 +394,7 @@ module "test" {
   name             = module.naming.app_service_plan.name_unique
   os_type          = "WindowsManagedInstance"
   parent_id        = azapi_resource.resource_group.id
-  enable_telemetry = var.enable_telemetry
+  enable_telemetry = false
   # Install scripts - references the scripts.zip blob in the storage account
   # The install script logs can be found in C:\InstallScripts on the VM instances
   install_scripts = [

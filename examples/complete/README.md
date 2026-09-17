@@ -91,7 +91,7 @@ module "test" {
       ]
     }
   }
-  enable_telemetry = var.enable_telemetry
+  enable_telemetry = false
   # Management lock - prevents accidental deletion
   lock = {
     kind = "CanNotDelete"

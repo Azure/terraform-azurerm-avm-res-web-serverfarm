@@ -46,7 +46,7 @@ module "test" {
   name             = module.naming.app_service_plan.name_unique
   os_type          = "WindowsContainer"
   parent_id        = azapi_resource.resource_group.id
-  enable_telemetry = var.enable_telemetry
+  enable_telemetry = false
   retry = {
     error_message_regex  = ["No available instances"]
     interval_seconds     = 30
