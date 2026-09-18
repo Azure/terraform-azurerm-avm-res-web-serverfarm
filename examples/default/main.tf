@@ -50,5 +50,5 @@ module "test" {
   name             = module.naming.app_service_plan.name_unique
   os_type          = "Windows"
   parent_id        = azapi_resource.resource_group.id
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
 }

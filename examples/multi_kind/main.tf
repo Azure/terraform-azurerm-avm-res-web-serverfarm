@@ -46,7 +46,7 @@ module "test" {
   name                   = "${module.naming.app_service_plan.name_unique}-${each.key}"
   os_type                = each.value.os_type
   parent_id              = azapi_resource.resource_group.id
-  enable_telemetry       = false
+  enable_telemetry       = var.enable_telemetry
   sku_name               = each.value.sku_name
   worker_count           = each.value.worker_count
   zone_balancing_enabled = each.value.zone_balancing
