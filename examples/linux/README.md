@@ -52,7 +52,7 @@ module "test" {
   name             = module.naming.app_service_plan.name_unique
   os_type          = "Linux"
   parent_id        = azapi_resource.resource_group.id
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
 }
 ```
 
@@ -91,7 +91,7 @@ If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
 
-Default: `true`
+Default: `false`
 
 ## Outputs
 

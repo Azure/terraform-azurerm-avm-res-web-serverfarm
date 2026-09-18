@@ -53,7 +53,7 @@ module "test" {
   name             = module.naming.app_service_plan.name_unique
   os_type          = "WindowsContainer"
   parent_id        = azapi_resource.resource_group.id
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   retry = {
     error_message_regex  = ["No available instances"]
     interval_seconds     = 30
@@ -98,7 +98,7 @@ If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
 
-Default: `true`
+Default: `false`
 
 ## Outputs
 
