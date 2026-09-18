@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-verified-modules-tools/main/src/Avm.Authoring/Resources/Schemas/v1/avm-module-metadata.schema.json",
+  "moduleDisplayName": "App Service Plan",
+  "moduleDescription": "AVM Resource Module for App Service Plan",
+  "canonicalType": "Microsoft.Web/serverfarms",
+  "owners": [
+    "matt-FFFFFF",
+    "ethanjenkins1"
+  ],
+  "telemetryIdPrefix": "46d3xtrf.res.de334d0"
+}
