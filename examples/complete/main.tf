@@ -24,8 +24,8 @@ resource "random_integer" "region_index" {
 
 # This ensures we have unique CAF compliant names for our resources.
 module "naming" {
-  source  = "Azure/naming/azurerm"
-  version = "0.4.4"
+  source  = "Azure/avm-utl-naming/azure"
+  version = "0.2.0"
 }
 
 # This is required for resource modules
@@ -66,6 +66,9 @@ resource "azapi_resource" "managed_identity" {
 # This is the module call
 module "test" {
   source = "../.."
+  providers = {
+    azapi = azapi
+  }
 
   location  = azapi_resource.resource_group.location
   name      = module.naming.app_service_plan.name_unique

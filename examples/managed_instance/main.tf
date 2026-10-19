@@ -45,8 +45,8 @@ resource "random_integer" "region_index" {
 
 # This ensures we have unique CAF compliant names for our resources.
 module "naming" {
-  source  = "Azure/naming/azurerm"
-  version = "0.4.4"
+  source  = "Azure/avm-utl-naming/azure"
+  version = "0.2.0"
 }
 
 # This is required for resource modules
@@ -377,6 +377,9 @@ resource "azapi_resource" "role_assignment_blob_contributor_current_user" {
 # This is the module call to create the App Service Managed Instance plan with custom configuration using install scripts, registry adapters, and storage mounts.
 module "test" {
   source = "../.."
+  providers = {
+    azapi = azapi
+  }
 
   location         = azapi_resource.resource_group.location
   name             = module.naming.app_service_plan.name_unique
