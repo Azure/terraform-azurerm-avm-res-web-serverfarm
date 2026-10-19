@@ -7,8 +7,9 @@
 mock_provider "azapi" {
   mock_data "azapi_client_config" {
     defaults = {
-      subscription_id = "00000000-0000-0000-0000-000000000000"
-      tenant_id       = "00000000-0000-0000-0000-000000000001"
+      subscription_id          = "00000000-0000-0000-0000-000000000000"
+      tenant_id                = "00000000-0000-0000-0000-000000000001"
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 
@@ -35,7 +36,7 @@ mock_provider "azapi" {
     }
   }
 }
-mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 variables {
@@ -73,6 +74,10 @@ run "non_flex_skips_region_lookup" {
     condition     = !contains(keys(azapi_resource.this.body.properties), "asyncScalingEnabled")
     error_message = "Async scaling must be omitted when async_scaling_enabled is unset."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "async_scaling_enabled" {
@@ -88,6 +93,10 @@ run "async_scaling_enabled" {
   assert {
     condition     = azapi_resource.this.body.properties.asyncScalingEnabled == true
     error_message = "Async scaling must be enabled in the App Service Plan request body."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 
@@ -110,6 +119,10 @@ run "worker_count_null_omits_capacity" {
   assert {
     condition     = !contains(keys(azapi_resource.this.body.properties), "maximumElasticWorkerCount")
     error_message = "maximumElasticWorkerCount must be omitted when worker_count is null for non-elastic SKUs."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 
@@ -137,6 +150,10 @@ run "flex_zone_supported_region" {
     condition     = can(azapi_resource.this)
     error_message = "The FC1 plan should be created in a supported zone-redundant region."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 # FC1 + zone balancing disabled must skip the region lookup and deploy in any region.
@@ -158,6 +175,10 @@ run "flex_zone_disabled_any_region" {
     condition     = can(azapi_resource.this)
     error_message = "FC1 without zone balancing should deploy in any region."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 # FC1 + zone balancing in an unsupported region must fail the precondition.
@@ -174,4 +195,8 @@ run "flex_zone_unsupported_region" {
   expect_failures = [
     azapi_resource.this,
   ]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
