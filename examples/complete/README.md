@@ -73,9 +73,6 @@ resource "azapi_resource" "managed_identity" {
 # This is the module call
 module "test" {
   source = "../.."
-  providers = {
-    azapi = azapi
-  }
 
   location  = azapi_resource.resource_group.location
   name      = module.naming.app_service_plan.name_unique

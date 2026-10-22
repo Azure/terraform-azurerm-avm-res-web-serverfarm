@@ -39,10 +39,7 @@ resource "azapi_resource" "resource_group" {
 
 # Deploy multiple App Service Plans with different SKU kinds
 module "test" {
-  source = "../.."
-  providers = {
-    azapi = azapi
-  }
+  source   = "../.."
   for_each = local.plans
 
   location               = azapi_resource.resource_group.location
