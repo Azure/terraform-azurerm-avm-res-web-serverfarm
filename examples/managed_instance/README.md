@@ -389,9 +389,6 @@ resource "azapi_resource" "role_assignment_blob_contributor_current_user" {
 # This is the module call to create the App Service Managed Instance plan with custom configuration using install scripts, registry adapters, and storage mounts.
 module "test" {
   source = "../.."
-  providers = {
-    azapi = azapi
-  }
 
   location         = azapi_resource.resource_group.location
   name             = module.naming.app_service_plan.name_unique

@@ -41,9 +41,6 @@ resource "azapi_resource" "resource_group" {
 # Windows Container requires a Premium v3 or higher SKU
 module "test" {
   source = "../.."
-  providers = {
-    azapi = azapi
-  }
 
   location         = azapi_resource.resource_group.location
   name             = module.naming.app_service_plan.name_unique
