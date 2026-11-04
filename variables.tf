@@ -167,8 +167,19 @@ variable "managed_identities" {
 
 variable "maximum_elastic_worker_count" {
   type        = number
-  default     = 3
-  description = "The maximum number of total workers allowed for this ElasticScaleEnabled App Service Plan."
+  default     = null
+  description = <<DESCRIPTION
+The maximum number of total workers allowed for this ElasticScaleEnabled App Service Plan.
+
+- Elastic Premium (`EP*`) and Workflow Standard (`WS*`) SKUs: defaults to `3` when unset.
+- Premium (`P*`) SKUs with `premium_plan_auto_scale_enabled = true`: the maximum burst for App Service automatic scaling. Must be greater than or equal to `worker_count`. When unset, the maximum burst equals `worker_count`.
+- Ignored for Flex Consumption (`FC1`) and for all other SKUs.
+DESCRIPTION
+
+  validation {
+    condition     = var.maximum_elastic_worker_count == null || !can(regex("^P", var.sku_name)) || !var.premium_plan_auto_scale_enabled || var.worker_count == null || var.maximum_elastic_worker_count >= var.worker_count
+    error_message = "maximum_elastic_worker_count is the maximum burst for automatic scaling on Premium (P*) SKUs and must be greater than or equal to worker_count. Raise maximum_elastic_worker_count, lower worker_count, or leave maximum_elastic_worker_count unset to use worker_count as the maximum burst."
+  }
 }
 
 variable "per_site_scaling_enabled" {

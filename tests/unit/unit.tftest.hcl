@@ -200,3 +200,123 @@ run "flex_zone_unsupported_region" {
     random = random
   }
 }
+
+# Premium (P*) automatic scaling: maximum_elastic_worker_count sets the maximum burst above the baseline worker_count.
+run "premium_auto_scale_maximum_burst_above_worker_count" {
+  command = apply
+
+  variables {
+    location                        = "westus"
+    maximum_elastic_worker_count    = 8
+    premium_plan_auto_scale_enabled = true
+    sku_name                        = "P2v3"
+    worker_count                    = 2
+    zone_balancing_enabled          = false
+  }
+
+  assert {
+    condition     = azapi_resource.this.body.properties.elasticScaleEnabled == true
+    error_message = "Automatic scaling must be enabled for a Premium SKU when premium_plan_auto_scale_enabled is true."
+  }
+
+  assert {
+    condition     = azapi_resource.this.body.sku.capacity == 2
+    error_message = "SKU capacity must equal worker_count."
+  }
+
+  assert {
+    condition     = azapi_resource.this.body.properties.maximumElasticWorkerCount == 8
+    error_message = "maximumElasticWorkerCount must equal maximum_elastic_worker_count for a Premium SKU with automatic scaling."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
+}
+
+# Premium (P*) automatic scaling without maximum_elastic_worker_count keeps the maximum burst at worker_count.
+run "premium_auto_scale_maximum_burst_defaults_to_worker_count" {
+  command = apply
+
+  variables {
+    location                        = "westus"
+    premium_plan_auto_scale_enabled = true
+    sku_name                        = "P2v3"
+    worker_count                    = 2
+    zone_balancing_enabled          = false
+  }
+
+  assert {
+    condition     = azapi_resource.this.body.properties.maximumElasticWorkerCount == 2
+    error_message = "maximumElasticWorkerCount must equal worker_count when maximum_elastic_worker_count is unset."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
+}
+
+# Premium (P*) without automatic scaling ignores maximum_elastic_worker_count.
+run "premium_without_auto_scale_ignores_maximum_elastic_worker_count" {
+  command = apply
+
+  variables {
+    location                     = "westus"
+    maximum_elastic_worker_count = 8
+    sku_name                     = "P2v3"
+    worker_count                 = 2
+    zone_balancing_enabled       = false
+  }
+
+  assert {
+    condition     = azapi_resource.this.body.properties.maximumElasticWorkerCount == 2
+    error_message = "maximumElasticWorkerCount must equal worker_count when automatic scaling is disabled."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
+}
+
+# Premium (P*) automatic scaling rejects a maximum burst below worker_count.
+run "premium_auto_scale_maximum_burst_below_worker_count_fails" {
+  command = plan
+
+  variables {
+    location                        = "westus"
+    maximum_elastic_worker_count    = 2
+    premium_plan_auto_scale_enabled = true
+    sku_name                        = "P2v3"
+    worker_count                    = 4
+    zone_balancing_enabled          = false
+  }
+
+  expect_failures = [
+    var.maximum_elastic_worker_count,
+  ]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
+}
+
+# Elastic Premium (EP*) keeps a maximum of 3 when maximum_elastic_worker_count is unset.
+run "elastic_premium_maximum_defaults_to_three" {
+  command = apply
+
+  variables {
+    location               = "westus"
+    sku_name               = "EP1"
+    worker_count           = 1
+    zone_balancing_enabled = false
+  }
+
+  assert {
+    condition     = azapi_resource.this.body.properties.maximumElasticWorkerCount == 3
+    error_message = "maximumElasticWorkerCount must default to 3 for Elastic Premium SKUs."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
+}

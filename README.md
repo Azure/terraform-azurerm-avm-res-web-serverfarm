@@ -202,9 +202,13 @@ Default: `{}`
 
 Description: The maximum number of total workers allowed for this ElasticScaleEnabled App Service Plan.
 
+- Elastic Premium (`EP*`) and Workflow Standard (`WS*`) SKUs: defaults to `3` when unset.
+- Premium (`P*`) SKUs with `premium_plan_auto_scale_enabled = true`: the maximum burst for App Service automatic scaling. Must be greater than or equal to `worker_count`. When unset, the maximum burst equals `worker_count`.
+- Ignored for Flex Consumption (`FC1`) and for all other SKUs.
+
 Type: `number`
 
-Default: `3`
+Default: `null`
 
 ### <a name="input_per_site_scaling_enabled"></a> [per\_site\_scaling\_enabled](#input\_per\_site\_scaling\_enabled)
 

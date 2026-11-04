@@ -19,10 +19,12 @@ locals {
   # FC1 (Flex Consumption) always uses "functionapp" regardless of os_type
   # WS (Workflow Standard) always uses "elastic" regardless of os_type
   kind = local.is_flex_consumption ? "functionapp" : (local.is_workflow_standard ? "elastic" : (var.os_type == "Linux" ? "linux" : "windows"))
-  # Maximum elastic worker count is applicable to Elastic Premium, WS, and Flex Consumption SKUs
-  maximum_elastic_worker_count = can(regex("^(EP|WS|FC)", var.sku_name)) ? var.maximum_elastic_worker_count : var.worker_count
+  # EP, WS and FC1 take the maximum from maximum_elastic_worker_count (default 3). P SKUs with automatic
+  # scaling take it when set, so the maximum burst can exceed the baseline worker count; otherwise worker_count.
+  maximum_elastic_worker_count = can(regex("^(EP|WS|FC)", var.sku_name)) ? coalesce(var.maximum_elastic_worker_count, 3) : (local.premium_plan_maximum_burst_set ? var.maximum_elastic_worker_count : var.worker_count)
   # Normalized (lowercased, spaces removed) location used to compare against geoRegions display names.
-  normalized_location = replace(lower(var.location), " ", "")
+  normalized_location            = replace(lower(var.location), " ", "")
+  premium_plan_maximum_burst_set = can(regex("^P", var.sku_name)) && var.premium_plan_auto_scale_enabled && var.maximum_elastic_worker_count != null
   # FC1 capacity is managed by Azure (always 0), other SKUs use worker_count when supplied.
   sku_capacity = local.is_flex_consumption ? 0 : var.worker_count
   # FC1 (Flex Consumption) zone redundancy is only available in a subset of Azure regions.
